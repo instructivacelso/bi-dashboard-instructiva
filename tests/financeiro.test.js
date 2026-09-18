@@ -162,3 +162,33 @@ test('rateio de custo indireto pela participação na receita', () => {
   assert.deepEqual(r, [{ id: 1, rateio: 700 }, { id: 2, rateio: 300 }]);
   assert.deepEqual(ratearPorReceita(1000, [{ id: 1, receita: 0 }]), [{ id: 1, rateio: 0 }]); // sem receita não quebra
 });
+
+import { saldoDevedorTotal, parcelaMensalTotal, jurosMes, patrimonioTotal, patrimonioLiquido, grauEndividamento, progressoDivida, alcadaExcedida, capitalLiquido } from '../lib/financeiro.js';
+
+test('dívidas: saldo, parcela mensal e juros do mês (só as em aberto)', () => {
+  const ds = [
+    { status: 'ativa', saldo_devedor: 50000, parcela_valor: 2000, taxa_mensal: 0.02 },
+    { status: 'atrasada', saldo_devedor: 10000, parcela_valor: 800, taxa_mensal: 0.05 },
+    { status: 'quitada', saldo_devedor: 0, parcela_valor: 0, taxa_mensal: 0.02 },
+  ];
+  assert.equal(saldoDevedorTotal(ds), 60000);
+  assert.equal(jurosMes(ds), 50000 * 0.02 + 10000 * 0.05); // 1500
+  assert.equal(parcelaMensalTotal(ds, [{ status: 'ativo', parcela_valor: 1200 }]), 2000 + 800 + 1200);
+});
+
+test('patrimônio líquido e grau de endividamento', () => {
+  const ativos = [{ valor_atual: 200000 }, { valor_atual: 50000 }];
+  const dividas = [{ status: 'ativa', saldo_devedor: 60000 }];
+  assert.equal(patrimonioTotal(ativos), 250000);
+  assert.equal(patrimonioLiquido(ativos, dividas), 190000);
+  assert.equal(grauEndividamento(dividas, ativos), 60000 / 250000);
+  assert.equal(grauEndividamento(dividas, []), null); // sem ativos não quebra
+});
+
+test('progresso, alçada e capital líquido', () => {
+  assert.equal(progressoDivida(12, 48), 0.25);
+  assert.equal(alcadaExcedida(15000, 10000), true);
+  assert.equal(alcadaExcedida(8000, 10000), false);
+  assert.equal(alcadaExcedida(15000, 0), false); // sem limite configurado não trava
+  assert.equal(capitalLiquido([{ tipo: 'aporte', valor: 50000 }, { tipo: 'retirada', valor: 10000 }, { tipo: 'distribuicao', valor: 5000 }]), 35000);
+});

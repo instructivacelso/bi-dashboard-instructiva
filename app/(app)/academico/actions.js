@@ -9,7 +9,7 @@ import { pontualidade } from '@/lib/comercial.js';
 import { configuracao } from '@/lib/dadosComercial.js';
 import { ErroValidacao, texto, opcao } from '@/lib/leitores.js';
 import { lerDiarioProfessor } from '@/lib/leitoresAcademico.js';
-import { ehProfessor, veAcademico, gereConteudo, configuraAcademico, ehDoAcademico, etapaConteudoValida, ETAPAS_CONTEUDO, PRIORIDADES, STATUS_PROFESSOR } from '@/lib/academico.js';
+import { ehProfessor, veAcademico, gereConteudo, configuraAcademico, ehDoAcademico, etapaConteudoValida, ETAPAS_CONTEUDO, PRIORIDADES, STATUS_PROFESSOR, STATUS_QUALIDADE, CRITERIOS_QUALIDADE, PESOS_ROTULOS, notaQualidade } from '@/lib/academico.js';
 
 const falha = (m) => { throw new ErroValidacao(m); };
 function tratar(e) {
@@ -81,6 +81,7 @@ export async function salvarConteudo(_e, fd) {
         if (etapa !== c.etapa) {
           if (!etapaConteudoValida(c.etapa, etapa)) falha(`Não é possível ir de "${ETAPAS_CONTEUDO[c.etapa]}" para "${ETAPAS_CONTEUDO[etapa]}".`);
           await db.query('INSERT INTO academic_content_events (content_id, de, para, user_id) VALUES ($1,$2,$3,$4)', [id, c.etapa, etapa, u.id]);
+          if (etapa === 'publicacao') await db.query('UPDATE academic_content SET publicado_em=CURRENT_DATE WHERE id=$1', [id]);
         }
         const prioridade = opcao(fd, 'prioridade', 'Prioridade', Object.keys(PRIORIDADES));
         await db.query('UPDATE academic_content SET etapa=$1, prioridade=$2, prazo=$3, responsavel_id=$4, link=$5, observacao=$6, updated_by=$7, updated_at=now() WHERE id=$8',
@@ -117,5 +118,64 @@ export async function salvarMetasAcademico(_e, fd) {
     });
     revalidatePath('/academico/cadastros');
     return { ok: true, mensagem: 'Metas salvas.' };
+  } catch (e) { return tratar(e); }
+}
+
+// ---------- Etapa 2: qualidade e pontuação ----------
+export async function salvarQualidade(_e, fd) {
+  try {
+    const u = await exigirUsuario();
+    if (!veAcademico(u) || u.vendoComo) falha('Só a coordenação avalia a qualidade das entregas.');
+    const content_id = lerNumero(fd.get('content_id'));
+    if (!content_id) falha('Escolha o conteúdo.');
+    const status = opcao(fd, 'status', 'Resultado', Object.keys(STATUS_QUALIDADE));
+    const criterios = {};
+    for (const k of Object.keys(CRITERIOS_QUALIDADE)) { const n = lerNumero(fd.get(`q_${k}`)); if (n !== null) { if (n < 0 || n > 10) falha('Os critérios vão de 0 a 10.'); criterios[k] = n; } }
+    const nota = notaQualidade(criterios);
+    const motivo = status === 'aprovado' ? (String(fd.get('motivo') || '').trim().slice(0, 300) || null) : texto(fd, 'motivo', 'Motivo do ajuste ou da reprovação', 300);
+    const prazo = status === 'aprovado' ? null : dt(fd, 'prazo_correcao');
+    await transacao(async (db) => {
+      const c = (await db.query('SELECT * FROM academic_content WHERE id=$1 FOR UPDATE', [content_id])).rows[0];
+      if (!c) falha('Conteúdo não encontrado.');
+      const primeira = (await db.query('SELECT COUNT(*)::int n FROM academic_quality WHERE content_id=$1', [content_id])).rows[0].n === 0;
+      const noPrazo = c.prazo ? String(c.prazo).slice(0, 10) >= new Date().toISOString().slice(0, 10) : null;
+      await db.query('INSERT INTO academic_quality (content_id, avaliador_id, criterios, nota, status, motivo, prazo_correcao, no_prazo) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [content_id, u.id, Object.keys(criterios).length ? JSON.stringify(criterios) : null, nota, status, motivo, prazo, noPrazo]);
+      const mud = {};
+      if (primeira) mud.aprovado_primeira = status === 'aprovado';
+      if (status === 'aprovado') {
+        // Aprovado segue para aprovação (ou fica onde está, se já passou)
+        if (['revisao', 'ajustes'].includes(c.etapa)) { mud.etapa = 'aprovacao'; await db.query('INSERT INTO academic_content_events (content_id, de, para, user_id) VALUES ($1,$2,$3,$4)', [content_id, c.etapa, 'aprovacao', u.id]); }
+      } else {
+        // Ajuste ou reprovação: volta para Ajustes e conta um ciclo de retrabalho
+        mud.ciclos_revisao = Number(c.ciclos_revisao || 0) + 1;
+        if (c.etapa !== 'ajustes') { mud.etapa = 'ajustes'; await db.query('INSERT INTO academic_content_events (content_id, de, para, user_id) VALUES ($1,$2,$3,$4)', [content_id, c.etapa, 'ajustes', u.id]); }
+        if (prazo) mud.prazo = prazo;
+      }
+      if (Object.keys(mud).length) { const cols = Object.keys(mud); await db.query(`UPDATE academic_content SET ${cols.map((k, i) => `${k}=$${i + 1}`).join(', ')}, updated_by=$${cols.length + 1}, updated_at=now() WHERE id=$${cols.length + 2}`, [...cols.map((k) => mud[k]), u.id, content_id]); }
+      await auditar(db, { userId: u.id, acao: 'criar', entidade: 'academic_quality', entidadeId: content_id, depois: { status, nota } });
+    });
+    revalidatePath('/academico/qualidade'); revalidatePath('/academico/pipeline'); revalidatePath('/academico');
+    return { ok: true, mensagem: status === 'aprovado' ? 'Entrega aprovada.' : 'Avaliação registrada: o conteúdo voltou para ajustes.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function salvarPesos(_e, fd) {
+  try {
+    const u = await exigirUsuario();
+    if (!configuraAcademico(u) || u.vendoComo) falha('Só a coordenação e o administrador configuram a pontuação.');
+    await transacao(async (db) => {
+      for (const k of Object.keys(PESOS_ROTULOS)) {
+        const n = lerNumero(fd.get(`peso_${k}`));
+        if (n === null) continue;
+        if (n < 0) falha('Os pesos não podem ser negativos.');
+        await db.query(`INSERT INTO academic_weights (chave, peso, updated_by) VALUES ($1,$2,$3) ON CONFLICT (chave) DO UPDATE SET peso=$2, updated_by=$3, updated_at=now()`, [k, n, u.id]);
+      }
+      const ativa = fd.get('ativa') === 'on' ? 'true' : 'false';
+      await db.query(`INSERT INTO configuracoes (chave, valor, updated_by) VALUES ('academico_pontuacao_ativa',$1,$2) ON CONFLICT (chave) DO UPDATE SET valor=$1, updated_by=$2, updated_at=now()`, [ativa, u.id]);
+      await auditar(db, { userId: u.id, acao: 'editar', entidade: 'academic_weights', depois: { ativa } });
+    });
+    revalidatePath('/academico/qualidade'); revalidatePath('/academico/cadastros');
+    return { ok: true, mensagem: 'Pontuação salva.' };
   } catch (e) { return tratar(e); }
 }

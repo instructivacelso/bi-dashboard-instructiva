@@ -62,3 +62,61 @@ test('permissões do RH e visibilidade de salário', () => {
   assert.equal(veSalario(ger), true);
   assert.equal(veSalario(dir), true);
 });
+
+import { custoFolha, provisaoMensal, folhaPercentReceita, enps, climaExibivel } from '../lib/rh.js';
+
+test('custo de folha soma remuneração + encargos + provisões − descontos', () => {
+  assert.equal(custoFolha({ salario_base: 3000, variavel: 500, beneficios: 400, encargos: 900, provisoes: 320, descontos: 200 }), 3000 + 500 + 400 + 900 + 320 - 200);
+  assert.equal(custoFolha({}), 0);
+});
+
+test('provisão mensal de férias (com 1/3) e 13º', () => {
+  // 3000: (3000/12*(4/3)) + 3000/12 = 333.33 + 250 = 583.33
+  assert.equal(provisaoMensal(3000, 0), 583.33);
+});
+
+test('folha como % da receita e eNPS', () => {
+  assert.equal(folhaPercentReceita(30000, 100000), 0.3);
+  assert.equal(folhaPercentReceita(30000, 0), null);
+  assert.equal(enps(60, 10, 100), 0.5);
+  assert.equal(enps(1, 1, 0), null);
+});
+
+test('clima só aparece com o mínimo de respostas (anonimato)', () => {
+  assert.equal(climaExibivel(8, 5), true);
+  assert.equal(climaExibivel(3, 5), false);
+  assert.equal(climaExibivel(0, 5), false);
+});
+
+import { mediaCriterios, resumoPdi, horasTreinoPorPessoa, taxaConclusaoTreino, prioridadeSucessao } from '../lib/rh.js';
+
+test('média dos critérios de avaliação', () => {
+  assert.equal(mediaCriterios({ resultados: 8, qualidade: 7, equipe: 9 }), 8);
+  assert.equal(mediaCriterios({}), null);
+});
+
+test('resumo de PDI (pendentes, atrasados, em dia)', () => {
+  const r = resumoPdi([
+    { status: 'concluido' }, { status: 'concluido' },
+    { status: 'aberto', prazo: '2026-01-01' },   // atrasado (antes de hoje)
+    { status: 'em_andamento', prazo: '2026-12-31' },
+  ], '2026-09-18');
+  assert.equal(r.total, 4);
+  assert.equal(r.pendentes, 2);
+  assert.equal(r.atrasados, 1);
+  assert.equal(r.concluidos, 2);
+  assert.equal(r.emDia, 0.5);
+});
+
+test('treinamento: horas por pessoa e taxa de conclusão', () => {
+  assert.equal(horasTreinoPorPessoa(40, 10), 4);
+  assert.equal(taxaConclusaoTreino(18, 20), 0.9);
+  assert.equal(taxaConclusaoTreino(0, 0), null);
+});
+
+test('prioridade de sucessão', () => {
+  assert.equal(prioridadeSucessao({ risco_perda: 'alto', impacto: 'alto' }), 'alta');
+  assert.equal(prioridadeSucessao({ prontidao: 'sem_sucessor', impacto: 'alto' }), 'alta');
+  assert.equal(prioridadeSucessao({ risco_perda: 'alto', impacto: 'baixo' }), 'media');
+  assert.equal(prioridadeSucessao({ risco_perda: 'baixo', impacto: 'baixo', prontidao: 'pronto' }), 'baixa');
+});

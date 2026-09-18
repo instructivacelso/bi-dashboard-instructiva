@@ -8,7 +8,7 @@ import {
 const ICONES = {
   inicio: Home, historico: History, acoes: AlertTriangle, diretoria: Crown, marketing: Megaphone,
   'comercial-jesuitas': Briefcase, 'comercial-toledo': Briefcase, 'comercial-diretoria': Briefcase, financeiro: Wallet, rh: Users, suporte: Headphones,
-  'pos-venda': HeartHandshake, cscx: Smile, indicacoes: Share2, academico: GraduationCap, dashboard: BarChart3,
+  'pos-venda': HeartHandshake, cscx: Smile, indicacoes: Share2, academico: GraduationCap, 'pos-venda': HeartHandshake, dashboard: BarChart3,
   usuarios: UserCog, setores: Layers, produtos: Package, lancamentos: Rocket, comercial: DollarSign,
   pendencias: ClipboardCheck, 'suporte-menu': LifeBuoy, auditoria: ShieldCheck, tv: Tv,
 };

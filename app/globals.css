@@ -483,3 +483,7 @@ table.dre tr.linha-forte td { border-top: 1px solid var(--linha); background: va
 /* Acadêmico — mover conteúdo no card do Kanban */
 .kanban-card .mover { display: flex; gap: 6px; margin-top: 6px; }
 .kanban-card .mover select { flex: 1; font-size: 0.8rem; padding: 4px 6px; }
+
+/* Chips de seleção (participantes de treinamento) */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-2); border: 1px solid var(--linha); border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }

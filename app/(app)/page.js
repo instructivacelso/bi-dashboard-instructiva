@@ -5,13 +5,13 @@ import { hoje, fmtData } from '@/lib/datas.js';
 import { DESCRICOES } from '@/lib/formularios.js';
 import { vePainelEmpresa, gerenteDe, ehSuperadmin } from '@/lib/perm.js';
 import { Topo, StatusTarefa, Vazio } from '@/components/Ui.js';
-import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check, Briefcase, Users, Wallet, UsersRound, GraduationCap } from 'lucide-react';
+import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check, Briefcase, Users, Wallet, UsersRound, GraduationCap, HeartHandshake } from 'lucide-react';
 import { veDashboardComercial, cidadesVisiveis } from '@/lib/comercial.js';
 import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
 import { ehDaIndicacao, veTodaIndicacao } from '@/lib/indicacao.js';
 import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 
-const ICONE = { cs_gerente: Users, indicacao_gerente: Users, indicacao_colaborador: ClipboardList, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users, financeiro_fechamento: Wallet, rh_fechamento: UsersRound, professor_diario: GraduationCap };
+const ICONE = { cs_gerente: Users, indicacao_gerente: Users, indicacao_colaborador: ClipboardList, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users, financeiro_fechamento: Wallet, rh_fechamento: UsersRound, professor_diario: GraduationCap, posvenda_fechamento: HeartHandshake };
 const hora = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
 
 function CartaoFormulario({ t }) {

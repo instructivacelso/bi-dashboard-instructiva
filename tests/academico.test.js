@@ -54,3 +54,45 @@ test('permissões do acadêmico', () => {
   assert.equal(configuraAcademico(coord), true);
   assert.equal(configuraAcademico(prof), false);
 });
+
+import { notaQualidade, resumoQualidade, resultadoMarketing, pontuacao } from '../lib/academico.js';
+
+test('nota de qualidade é a média dos critérios', () => {
+  assert.equal(notaQualidade({ precisao: 9, didatica: 8, audio_video: 7 }), 8);
+  assert.equal(notaQualidade({}), null);
+});
+
+test('qualidade separa aprovação de primeira e retrabalho', () => {
+  const r = resumoQualidade([
+    { content_id: 1, status: 'aprovado', nota: 9, no_prazo: true },
+    { content_id: 2, status: 'reprovado', nota: 5, no_prazo: false },
+    { content_id: 2, status: 'aprovado', nota: 8, no_prazo: true },   // 2ª avaliação do mesmo conteúdo
+    { content_id: 3, status: 'aprovado_ajuste', nota: 7, no_prazo: true },
+  ]);
+  assert.equal(r.conteudos, 3);
+  assert.equal(r.aprovadosPrimeira, 1);            // só o conteúdo 1 passou de primeira
+  assert.equal(r.aprovacaoSemRetrabalho, 1 / 3);
+  assert.equal(r.reprovacoes, 1);
+  assert.equal(r.retrabalho, 2 / 4);               // 1 reprovação + 1 ajuste em 4 avaliações
+  assert.equal(r.noPrazo, 3 / 4);
+  assert.equal(r.notaMedia, 7.25);
+});
+
+test('resultado de marketing: CPL e ROAS (sem digitar)', () => {
+  const m = resultadoMarketing({ investimento: 2000, leads: 100, receita: 10000 });
+  assert.equal(m.cpl, 20);
+  assert.equal(m.roas, 5);
+  assert.equal(resultadoMarketing({ investimento: 0, leads: 0 }).cpl, null);
+});
+
+test('pontuação só conta entrega válida, desconta reprovação e ajusta pela qualidade', () => {
+  const pesos = { aula_publicada: 10, aula_gravada: 4, venda: 5 };
+  // 3 gravadas, 1 regravada => 2 válidas; 2 publicadas; 1 venda
+  const p = pontuacao({ grav_aulas: 3, grav_regravadas: 1, grav_publicadas: 2, vnd_qtd: 1 }, pesos, { reprovacoes: 1, notaMedia: 8 });
+  assert.equal(p.bruto, 2 * 10 + 2 * 4 + 1 * 5);    // 33
+  assert.equal(p.desconto, 10);                     // 1 reprovação × peso de aula publicada
+  assert.equal(p.fator, 0.8);
+  assert.equal(p.total, Math.round((33 - 10) * 0.8 * 100) / 100); // 18.4
+  assert.equal(pontuacao({}, pesos, {}).total, 0);
+  assert.equal(pontuacao({ grav_publicadas: 1 }, pesos, { notaMedia: 2 }).fator, 0.5); // piso do fator
+});

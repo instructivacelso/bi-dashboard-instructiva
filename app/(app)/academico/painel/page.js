@@ -3,7 +3,8 @@ import { hoje } from '@/lib/datas.js';
 import { moeda, numero, pct } from '@/lib/formato.js';
 import { semaforo } from '@/lib/calc.js';
 import { ehProfessor } from '@/lib/academico.js';
-import { numerosAcademico, metasProfessor } from '@/lib/dadosAcademico.js';
+import { numerosAcademico, metasProfessor, marketingDoProfessor, qualidadePeriodo } from '@/lib/dadosAcademico.js';
+import { q1 } from '@/lib/db.js';
 import { Topo, Aviso, Kpi } from '@/components/Ui.js';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,8 @@ export default async function PainelProfessor(props) {
   const u = await exigirUsuario();
   if (!ehProfessor(u)) return <><Topo titulo="Meu painel" /><Aviso tipo="erro">Área dos professores.</Aviso></>;
   const mes = /^\d{4}-\d{2}$/.test(sp.mes || '') && sp.mes <= hoje().slice(0, 7) ? sp.mes : hoje().slice(0, 7);
-  const [n, meta] = await Promise.all([numerosAcademico(`${mes}-01`, fim(mes), u.id), metasProfessor(u.id)]);
+  const cad = await q1('SELECT nome FROM academic_teachers WHERE user_id=$1 ORDER BY id LIMIT 1', [u.id]);
+  const [n, meta, mkt, qual] = await Promise.all([numerosAcademico(`${mes}-01`, fim(mes), u.id), metasProfessor(u.id), marketingDoProfessor(cad?.nome || u.nome, `${mes}-01`, fim(mes)), qualidadePeriodo(`${mes}-01`, fim(mes), u.id)]);
   const c = n.cons;
   const m = meta || {};
 
@@ -52,6 +54,27 @@ export default async function PainelProfessor(props) {
             <div><span>Vendas</span><b>{numero(c.vnd_qtd)}</b></div>
             <div><span>Conversão</span><b>{pct(c.conversaoVenda)}</b></div>
             <div><span>Ticket médio</span><b>{moeda(c.ticketMedio, 0)}</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="secao grade g2">
+        <div className="painel"><div className="painel-cab"><h2>Resultados de marketing dos seus lançamentos</h2></div>
+          <div className="leitura">
+            <div><span>Investimento</span><b>{moeda(mkt.investimento, 0)}</b></div>
+            <div><span>Leads</span><b>{numero(mkt.leads)}</b></div>
+            <div><span>CPL</span><b>{mkt.cpl != null ? moeda(mkt.cpl, 2) : '—'}</b></div>
+            <div><span>Receita</span><b>{moeda(mkt.receita, 0)}</b></div>
+            <div><span>ROAS</span><b>{mkt.roas != null ? `${numero(mkt.roas, 1)}x` : '—'}</b></div>
+          </div>
+          <p className="suave pequeno" style={{ marginTop: 8 }}>Vem do Marketing e das vendas — você não digita nada aqui.</p>
+        </div>
+        <div className="painel"><div className="painel-cab"><h2>Qualidade das suas entregas</h2></div>
+          <div className="leitura">
+            <div><span>Aprovadas de primeira</span><b>{pct(qual.aprovacaoSemRetrabalho)}</b></div>
+            <div><span>Retrabalho</span><b>{pct(qual.retrabalho)}</b></div>
+            <div><span>Nota média</span><b>{qual.notaMedia != null ? numero(qual.notaMedia, 1) : '—'}</b></div>
+            <div><span>No prazo</span><b>{pct(qual.noPrazo)}</b></div>
           </div>
         </div>
       </section>

@@ -9,7 +9,7 @@ import { pontualidade } from '@/lib/comercial.js';
 import { configuracao } from '@/lib/dadosComercial.js';
 import { ErroValidacao, texto, opcao } from '@/lib/leitores.js';
 import { lerFechamentoFinanceiro } from '@/lib/leitoresFinanceiro.js';
-import { operaFinanceiro, configuraFinanceiro, ehGerenteFinanceiro, TIPOS_CONTA, NATUREZAS, GRUPOS_CATEGORIA, TIPOS_AJUSTE, GRUPOS_AJUSTE } from '@/lib/financeiro.js';
+import { operaFinanceiro, configuraFinanceiro, ehGerenteFinanceiro, TIPOS_CONTA, NATUREZAS, GRUPOS_CATEGORIA, TIPOS_AJUSTE, GRUPOS_AJUSTE, TIPOS_DIVIDA, STATUS_DIVIDA, TIPOS_CAPITAL, STATUS_CONSORCIO, TIPOS_ATIVO } from '@/lib/financeiro.js';
 
 const falha = (m) => { throw new ErroValidacao(m); };
 function tratar(e) {
@@ -205,4 +205,107 @@ export async function excluirAjuste(fd) {
     await auditar(db, { userId: u.id, acao: 'excluir', entidade: 'fin_adjustments', entidadeId: id, antes: a });
   });
   revalidatePath('/financeiro/resultado');
+}
+
+// ---------- Etapa 3: dívidas, patrimônio, investidores, consórcios ----------
+const dt3 = (fd, n) => { const v = String(fd.get(n) || '').trim(); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; };
+const int3 = (fd, n) => { const x = lerNumero(fd.get(n)); return x === null ? 0 : Math.max(0, Math.round(x)); };
+const guardar3 = async () => { const u = await exigirUsuario(); if (!configuraFinanceiro(u) || u.vendoComo) falha('Só o gerente financeiro e o administrador mexem aqui.'); return u; };
+
+export async function salvarDivida(_e, fd) {
+  try {
+    const u = await guardar3();
+    const id = lerNumero(fd.get('id'));
+    const taxaPct = lerNumero(fd.get('taxa_mensal')); // recebe em %
+    const d = {
+      credor: texto(fd, 'credor', 'Credor', 150), tipo: opcao(fd, 'tipo', 'Tipo', Object.keys(TIPOS_DIVIDA)),
+      valor_original: val(fd, 'valor_original'), saldo_devedor: val(fd, 'saldo_devedor'),
+      taxa_mensal: taxaPct === null ? 0 : Math.round((taxaPct / 100) * 10000) / 10000,
+      parcelas_total: int3(fd, 'parcelas_total'), parcelas_pagas: int3(fd, 'parcelas_pagas'), parcela_valor: val(fd, 'parcela_valor'),
+      proximo_vencimento: dt3(fd, 'proximo_vencimento'), garantia: String(fd.get('garantia') || '').trim().slice(0, 150) || null,
+      status: opcao(fd, 'status', 'Status', Object.keys(STATUS_DIVIDA)), observacao: String(fd.get('observacao') || '').trim().slice(0, 300) || null,
+    };
+    if (d.parcelas_pagas > d.parcelas_total && d.parcelas_total > 0) falha('Parcelas pagas não podem passar do total.');
+    await transacao(async (db) => {
+      if (id) { const cols = Object.keys(d); await db.query(`UPDATE fin_debts SET ${cols.map((c, i) => `${c}=$${i + 1}`).join(', ')}, updated_by=$${cols.length + 1}, updated_at=now() WHERE id=$${cols.length + 2}`, [...cols.map((c) => d[c]), u.id, id]); }
+      else { const cols = Object.keys(d); await db.query(`INSERT INTO fin_debts (${cols.join(', ')}, created_by) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}, $${cols.length + 1})`, [...cols.map((c) => d[c]), u.id]); }
+      await auditar(db, { userId: u.id, acao: id ? 'editar' : 'criar', entidade: 'fin_debts', entidadeId: id, depois: d });
+    });
+    revalidatePath('/financeiro/patrimonio');
+    return { ok: true, mensagem: 'Dívida salva.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function salvarAtivo(_e, fd) {
+  try {
+    const u = await guardar3();
+    const id = lerNumero(fd.get('id'));
+    const d = { tipo: opcao(fd, 'tipo', 'Tipo', Object.keys(TIPOS_ATIVO)), descricao: texto(fd, 'descricao', 'Descrição', 150), valor_aquisicao: lerNumero(fd.get('valor_aquisicao')) !== null ? val(fd, 'valor_aquisicao') : null, valor_atual: val(fd, 'valor_atual'), aquisicao_data: dt3(fd, 'aquisicao_data'), observacao: String(fd.get('observacao') || '').trim().slice(0, 300) || null };
+    await transacao(async (db) => {
+      if (id) await db.query('UPDATE fin_assets SET tipo=$1, descricao=$2, valor_aquisicao=$3, valor_atual=$4, aquisicao_data=$5, observacao=$6 WHERE id=$7', [d.tipo, d.descricao, d.valor_aquisicao, d.valor_atual, d.aquisicao_data, d.observacao, id]);
+      else await db.query('INSERT INTO fin_assets (tipo, descricao, valor_aquisicao, valor_atual, aquisicao_data, observacao, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7)', [d.tipo, d.descricao, d.valor_aquisicao, d.valor_atual, d.aquisicao_data, d.observacao, u.id]);
+      await auditar(db, { userId: u.id, acao: id ? 'editar' : 'criar', entidade: 'fin_assets', entidadeId: id, depois: d });
+    });
+    revalidatePath('/financeiro/patrimonio');
+    return { ok: true, mensagem: 'Ativo salvo.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function salvarConsorcio(_e, fd) {
+  try {
+    const u = await guardar3();
+    const id = lerNumero(fd.get('id'));
+    const contemplado = fd.get('contemplado') === 'on' || fd.get('contemplado') === 'sim';
+    const d = { administradora: texto(fd, 'administradora', 'Administradora', 150), bem: String(fd.get('bem') || '').trim().slice(0, 150) || null, valor_carta: val(fd, 'valor_carta'), parcela_valor: val(fd, 'parcela_valor'), parcelas_total: int3(fd, 'parcelas_total'), parcelas_pagas: int3(fd, 'parcelas_pagas'), contemplado, contemplado_em: contemplado ? (dt3(fd, 'contemplado_em') || hoje()) : null, status: opcao(fd, 'status', 'Status', Object.keys(STATUS_CONSORCIO)), observacao: String(fd.get('observacao') || '').trim().slice(0, 300) || null };
+    await transacao(async (db) => {
+      if (id) { const cols = Object.keys(d); await db.query(`UPDATE fin_consortia SET ${cols.map((c, i) => `${c}=$${i + 1}`).join(', ')} WHERE id=$${cols.length + 1}`, [...cols.map((c) => d[c]), id]); }
+      else { const cols = Object.keys(d); await db.query(`INSERT INTO fin_consortia (${cols.join(', ')}, created_by) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}, $${cols.length + 1})`, [...cols.map((c) => d[c]), u.id]); }
+      await auditar(db, { userId: u.id, acao: id ? 'editar' : 'criar', entidade: 'fin_consortia', entidadeId: id, depois: d });
+    });
+    revalidatePath('/financeiro/patrimonio');
+    return { ok: true, mensagem: 'Consórcio salvo.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function salvarAporte(_e, fd) {
+  try {
+    const u = await guardar3();
+    const d = { investidor: texto(fd, 'investidor', 'Investidor/sócio', 150), tipo: opcao(fd, 'tipo', 'Tipo', Object.keys(TIPOS_CAPITAL)), data: dt3(fd, 'data') || hoje(), valor: val(fd, 'valor'), observacao: String(fd.get('observacao') || '').trim().slice(0, 300) || null };
+    if (d.valor <= 0) falha('Informe um valor maior que zero.');
+    await transacao(async (db) => {
+      await db.query('INSERT INTO fin_capital_movements (investidor, tipo, data, valor, observacao, created_by) VALUES ($1,$2,$3,$4,$5,$6)', [d.investidor, d.tipo, d.data, d.valor, d.observacao, u.id]);
+      await auditar(db, { userId: u.id, acao: 'criar', entidade: 'fin_capital_movements', depois: d });
+    });
+    revalidatePath('/financeiro/patrimonio');
+    return { ok: true, mensagem: 'Movimento registrado.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function excluirRegistroPatrimonio(fd) {
+  const u = await exigirUsuario();
+  if (!configuraFinanceiro(u) || u.vendoComo) return;
+  const id = lerNumero(fd.get('id')); const tabela = String(fd.get('tabela') || '');
+  if (!id || !['fin_debts', 'fin_assets', 'fin_consortia', 'fin_capital_movements'].includes(tabela)) return;
+  await transacao(async (db) => {
+    const a = (await db.query(`SELECT * FROM ${tabela} WHERE id=$1`, [id])).rows[0];
+    if (!a) return;
+    await db.query(`DELETE FROM ${tabela} WHERE id=$1`, [id]);
+    await auditar(db, { userId: u.id, acao: 'excluir', entidade: tabela, entidadeId: id, antes: a });
+  });
+  revalidatePath('/financeiro/patrimonio');
+}
+
+export async function salvarConfigPatrimonio(_e, fd) {
+  try {
+    const u = await guardar3();
+    const alcada = lerNumero(fd.get('alcada')); const metaRed = lerNumero(fd.get('meta_reducao'));
+    if (alcada === null || alcada < 0 || metaRed === null || metaRed < 0) falha('Os valores devem ser zero ou mais.');
+    await transacao(async (db) => {
+      for (const [chave, valor] of [['financeiro_alcada_diretoria', String(Math.round(alcada * 100) / 100)], ['financeiro_meta_reducao_divida', String(Math.round(metaRed * 100) / 100)]])
+        await db.query(`INSERT INTO configuracoes (chave, valor, updated_by) VALUES ($1,$2,$3) ON CONFLICT (chave) DO UPDATE SET valor=$2, updated_by=$3, updated_at=now()`, [chave, valor, u.id]);
+      await auditar(db, { userId: u.id, acao: 'editar', entidade: 'configuracoes', depois: { patrimonio: true } });
+    });
+    revalidatePath('/financeiro/patrimonio');
+    return { ok: true, mensagem: 'Parâmetros salvos.' };
+  } catch (e) { return tratar(e); }
 }

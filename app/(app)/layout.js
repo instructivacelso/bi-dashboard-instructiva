@@ -12,11 +12,12 @@ import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 import { veFinanceiro } from '@/lib/financeiro.js';
 import { veRh } from '@/lib/rh.js';
 import { veAcademico, ehProfessor } from '@/lib/academico.js';
+import { vePosvenda } from '@/lib/posvenda.js';
 import { sair, sairVerComo } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
-const CURTOS = { cs_gerente: 'Fechamento do gerente', indicacao_gerente: 'Fechamento do gerente', indicacao_colaborador: 'Formulário do dia', suporte_fechamento: 'Fechamento do dia', suporte_gerente: 'Fechamento do gerente', trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial', financeiro_fechamento: 'Fechamento do dia', rh_fechamento: 'Fechamento do dia', professor_diario: 'Meu dia' };
+const CURTOS = { cs_gerente: 'Fechamento do gerente', indicacao_gerente: 'Fechamento do gerente', indicacao_colaborador: 'Formulário do dia', suporte_fechamento: 'Fechamento do dia', suporte_gerente: 'Fechamento do gerente', trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial', financeiro_fechamento: 'Fechamento do dia', rh_fechamento: 'Fechamento do dia', professor_diario: 'Meu dia', posvenda_fechamento: 'Fechamento do dia' };
 
 async function montarMenu(u) {
   // Colaborador e prestador externo: só os próprios formulários e histórico
@@ -67,9 +68,17 @@ async function montarMenu(u) {
   if (veTodoSuporte(u)) extra.push({ href: '/suporte/dashboard', rotulo: 'Dashboard Suporte', icone: 'suporte' });
   if (veFinanceiro(u)) extra.push({ href: '/financeiro', rotulo: 'Financeiro', icone: 'financeiro' });
   if (veFinanceiro(u)) extra.push({ href: '/financeiro/resultado', rotulo: 'Resultado do mês', icone: 'dashboard' });
+  if (veFinanceiro(u)) extra.push({ href: '/financeiro/patrimonio', rotulo: 'Patrimônio', icone: 'financeiro' });
   if (veRh(u)) extra.push({ href: '/rh', rotulo: 'RH', icone: 'rh' });
+  if (veRh(u)) extra.push({ href: '/rh/folha', rotulo: 'Folha', icone: 'financeiro' });
+  if (veRh(u)) extra.push({ href: '/rh/clima', rotulo: 'Clima e eNPS', icone: 'cscx' });
+  if (veRh(u)) extra.push({ href: '/rh/desempenho', rotulo: 'Desempenho', icone: 'dashboard' });
+  if (veRh(u)) extra.push({ href: '/rh/treinamentos', rotulo: 'Treinamentos', icone: 'academico' });
+  if (veRh(u)) extra.push({ href: '/rh/sucessao', rotulo: 'Sucessão', icone: 'rh' });
   if (veAcademico(u)) extra.push({ href: '/academico', rotulo: 'Acadêmico', icone: 'academico' });
+  if (veAcademico(u)) extra.push({ href: '/academico/qualidade', rotulo: 'Qualidade', icone: 'dashboard' });
   if (ehProfessor(u) && !veAcademico(u)) extra.push({ href: '/academico/painel', rotulo: 'Meu painel', icone: 'academico' });
+  if (vePosvenda(u)) extra.push({ href: '/pos-venda', rotulo: 'Pós-venda', icone: 'pos-venda' });
   if (ehDiretorComercial(u)) extra.push({ href: '/comercial/metas', rotulo: 'Metas comerciais', icone: 'pendencias' });
   if (vePainelEmpresa(u)) extra.push({ href: '/admin/tv', rotulo: 'Painel da TV', icone: 'tv' });
   if (ehSuperadmin(u) || gerenteDe(u, 'marketing')) extra.push({ href: '/admin/lancamentos', rotulo: 'Lançamentos', icone: 'lancamentos' });

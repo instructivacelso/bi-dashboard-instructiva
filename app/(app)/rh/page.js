@@ -29,6 +29,11 @@ export default async function PainelRh(props) {
         <a className="btn sec peq" href={`/rh?mes=${somaMes(mes, -1)}`}>← {rot(somaMes(mes, -1))}</a>
         {mes < mesAtual && <a className="btn sec peq" href={`/rh?mes=${somaMes(mes, 1)}`}>{rot(somaMes(mes, 1))} →</a>}
         <a className="btn sec" href="/rh/colaboradores">Colaboradores</a>
+        {veSalario(u) && <a className="btn sec" href="/rh/folha">Folha</a>}
+        <a className="btn sec" href="/rh/clima">Clima e eNPS</a>
+        <a className="btn sec" href="/rh/desempenho">Desempenho</a>
+        <a className="btn sec" href="/rh/treinamentos">Treinamentos</a>
+        <a className="btn sec" href="/rh/sucessao">Sucessão</a>
         {configuraRh(u) && <a className="btn sec" href="/rh/cadastros">Cadastros</a>}
       </Topo>
 

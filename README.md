@@ -61,10 +61,7 @@ tests/                testes das regras
 ```
 
 ## Próximas etapas
-- Financeiro — Etapa 3 (dívidas, investidores, consórcios, patrimônio, metas de redução e alçadas).
-- RH — Etapa 2 (clima/eNPS, folha completa, avaliações 360, treinamento detalhado, sucessão, integrações de ponto e folha).
-- Acadêmico — Etapa 2 (integrações finas com marketing/comercial/suporte, qualidade e aprovação, pontuação opcional, automações).
-- Pós-venda.
+Todos os setores e etapas pedidos estão implementados. Evoluções possíveis, quando fizer sentido: importação de planilhas/extratos (hoje tudo é por formulário), exportação em CSV/Excel, recuperação de senha por e-mail e integrações por API (ponto, folha, plataformas de curso).
 - Envio de e-mail para recuperação de senha (hoje o admin gera o link).
 - O sistema funciona 100% por formulário: não há integração com plataformas de venda, WhatsApp ou automações.
 
@@ -81,6 +78,18 @@ tests/                testes das regras
 - O que não passa pelo caixa do dia (depreciação, pró-labore, provisões, ajustes de imposto ou juros) é lançado em **Ajustes de competência**, na própria tela, e entra no DRE do mês.
 - Para o CAC e o custo por produto ficarem certos, marque nos pagamentos o **produto** (e, quando fizer sentido, o **lançamento**) a que o custo se refere. O que ficar sem produto é rateado pela receita.
 
+## Financeiro (Etapa 3 — posição patrimonial)
+- Em **Financeiro → Patrimônio** o gerente e a diretoria veem a foto de solvência da escola: **patrimônio líquido** (ativos − dívidas), **dívida em aberto** e grau de endividamento, **parcela mensal** comprometida (dívidas + consórcios) e **juros do mês**.
+- Cadastros próprios: **dívidas e financiamentos** (credor, tipo, saldo, taxa ao mês, parcelas, vencimento, status), **patrimônio/ativos** (imóveis, veículos, equipamentos, aplicações), **consórcios** (carta, parcela, contemplação) e **investidores/sócios** (aportes, retiradas e distribuições, com capital líquido).
+- **Meta de teto de dívida:** defina um teto e o painel avisa quanto falta para chegar nele.
+- **Alçada de aprovação:** defina o valor acima do qual um pagamento exige a diretoria; a tela lista os pagamentos previstos que passam desse limite.
+
+## Pós-venda (Etapa 1 — retenção e renovação)
+- **Fechamento diário** com seções que a operação marca como “sem ocorrência” e segue: onboarding de novos alunos, acompanhamento, renovações, cancelamentos, upsell, satisfação (NPS) e inadimplência de renovação, mais riscos e plano de ação.
+- **Painel (gerente/diretoria):** taxa de renovação e churn, NPS, receita retida (renovações + upsell), onboarding, ticket de renovação, conversão de upsell, inadimplência, motivos de cancelamento e riscos apontados — tudo por mês.
+- **Metas:** renovação (%) e NPS (pontos) configuráveis, com semáforo no painel.
+- **Começar:** marque as equipes em Setores → Pós-venda (Operação e Gerente); a operação passa a enviar o fechamento do dia.
+
 ## RH (Etapa 1)
 - **Estrutura e ficha:** cadastre **cargos** (RH → Cadastros) e **colaboradores** (RH → Colaboradores), com unidade, cidade, setor, cargo, gestor, admissão, vínculo, modalidade e status. O **salário é restrito**: só o gerente de RH e a diretoria veem e editam; toda alteração fica auditada.
 - **Fechamento diário do RH:** a operação registra o dia em seções que podem ser marcadas como “sem ocorrência” (movimentação, ponto, ocorrências, recrutamento, treinamentos) mais riscos e plano de ação. Nada de digitar a lista inteira de gente todo dia.
@@ -88,12 +97,24 @@ tests/                testes das regras
 - **Perfis:** RH operacional (cadastros, ficha e fechamento, sem salário), gerente de RH e diretoria (painel completo com custo), colaborador vê só o que preenche.
 - **Começar:** cadastre cargos e colaboradores; marque as equipes de RH em Setores → RH (Operação e Gerente).
 
+### RH — Etapa 2 (folha e clima)
+- **Folha e custo de pessoal** (RH → Folha, restrito ao gerente de RH e à diretoria): por mês, cada colaborador tem base, variável, benefícios, encargos e descontos; as **provisões de férias e 13º e o custo total são calculados automaticamente**. O painel mostra o custo total, o custo por setor e a **folha como % da receita** (a receita vem do próprio sistema). Ao **fechar e enviar ao financeiro**, o total vira um lançamento de pessoal no resultado do mês, sem redigitar.
+- **Clima e eNPS** (RH → Clima e eNPS): registro do resultado por competência e escopo (empresa ou setor), com **eNPS calculado** e satisfação média. Para preservar o anonimato, o resultado de um grupo só aparece com um mínimo de respostas (configurável).
+- **Desempenho e PDI** (RH → Desempenho): avaliações por colaborador (experiência, periódica, 360°, autoavaliação) com nota geral, critérios (0–10), pontos fortes/a desenvolver e potencial; cada avaliação pode gerar **ações de PDI** com prazo, e o painel acompanha média de desempenho e PDIs pendentes/atrasados/concluídos.
+- **Treinamentos** (RH → Treinamentos): cadastro do treinamento (instrutor, formato, carga, custo) e participantes, com horas por pessoa, taxa de conclusão (presença) e custo do mês.
+- **Sucessão** (RH → Sucessão): matriz de posições-chave com sucessor, prontidão, risco de perda, impacto e plano de retenção; a **prioridade** (alta/média/baixa) é calculada a partir do risco, do impacto e da existência de sucessor.
+
 ## Professores e Acadêmico (Etapa 1)
 - **Registro diário do professor:** o professor marca as atividades do dia (gravação, criativos, materiais, suporte, lives, vendas, planejamento) e **só os blocos marcados aparecem** — leva poucos minutos. As métricas de mídia continuam vindo do Marketing, sem redigitar.
 - **Pipeline de conteúdo (Kanban):** da ideia à publicação, em 12 etapas; o conteúdo só avança, com prazo, prioridade, responsável e histórico de cada mudança.
 - **Indicadores:** horas por atividade, aulas gravadas e publicadas, taxa de regravação, criativos, páginas, suporte (resolução e 1º contato), lives (comparecimento e receita por live), vendas (conversão e ticket), tudo por professor e no total.
 - **Painéis:** o professor acompanha seus números contra as metas; a coordenação e a diretoria veem a produção do time, o pipeline e o que está atrasado.
 - **Começar:** cadastre os professores e vincule o login (Acadêmico → Cadastros), defina metas e marque as equipes em Setores → Professores e Acadêmico (Professores e Coordenação).
+
+### Acadêmico — Etapa 2 (qualidade, marketing e pontuação)
+- **Qualidade e aprovação** (Acadêmico → Qualidade): a coordenação avalia cada entrega em revisão com critérios de 0 a 10 (precisão técnica, didática, áudio e vídeo…) e o resultado: aprovado (segue para Aprovação), aprovado com ajuste ou reprovado (volta para Ajustes e conta um ciclo de retrabalho). **Produção, aprovação de primeira, retrabalho, nota média e entregas no prazo aparecem separados.**
+- **Resultados de marketing por professor:** o painel do professor mostra investimento, leads, CPL, receita e ROAS dos lançamentos em que ele aparece (pelo nome cadastrado no lançamento) — vem do Marketing e das vendas, sem digitar.
+- **Pontuação opcional:** desligada por padrão. Com pesos por atividade, só entregas válidas pontuam (regravação não conta), cada reprovação desconta e a qualidade média ajusta o total; a **memória do cálculo** aparece ao lado. Ela nunca substitui os indicadores nem decide sozinha remuneração, promoção ou desligamento.
 
 ## Time de Indicação (colaborador)
 - Cadastre a pessoa em **Indicações → Equipe**, atividade **Colaborador de indicação**. Ela passa a ver o **Formulário do dia** (10 campos), **Meu painel** e **Meu pipeline** (Kanban de 13 estágios) — somente com as próprias indicações.

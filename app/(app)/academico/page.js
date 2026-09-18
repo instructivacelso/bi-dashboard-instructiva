@@ -29,6 +29,7 @@ export default async function PainelAcademico(props) {
         <a className="btn sec peq" href={`/academico?mes=${somaMes(mes, -1)}`}>← {rot(somaMes(mes, -1))}</a>
         {mes < mesAtual && <a className="btn sec peq" href={`/academico?mes=${somaMes(mes, 1)}`}>{rot(somaMes(mes, 1))} →</a>}
         {gereConteudo(u) && <a className="btn sec" href="/academico/pipeline">Pipeline</a>}
+        <a className="btn sec" href="/academico/qualidade">Qualidade</a>
         {configuraAcademico(u) && <a className="btn sec" href="/academico/cadastros">Cadastros</a>}
       </Topo>
 
