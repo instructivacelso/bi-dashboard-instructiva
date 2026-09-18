@@ -59,3 +59,13 @@ test('aplicabilidade dos formulários', () => {
 test('leitura de números em formato brasileiro', () => {
   assert.equal(lerNumero('1.234,56'), 1234.56); assert.equal(lerNumero('R$ 50'), 50); assert.equal(lerNumero(''), null);
 });
+
+import { lancamentosDoFormulario } from '../lib/formularios.js';
+test('ninguém fica sem formulário: sem lançamento aberto usa a Operação geral', () => {
+  const geral = { id: 1, status: 'captacao', permanente: true };
+  const aberto = { id: 2, status: 'captacao', permanente: false };
+  const encerrado = { id: 3, status: 'encerrado', permanente: false };
+  assert.deepEqual(lancamentosDoFormulario('automacao', [geral, encerrado], H).map((l) => l.id), [1]);
+  assert.deepEqual(lancamentosDoFormulario('automacao', [geral, aberto], H).map((l) => l.id), [2]);
+  assert.deepEqual(lancamentosDoFormulario('live', [geral], H), []);
+});

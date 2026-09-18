@@ -64,6 +64,8 @@ export async function salvarUsuario(_e, fd) {
     const subs = fd.getAll('sub').map(Number).filter(Boolean);
     const deps = fd.getAll('dep').map(Number).filter(Boolean);
     const gers = new Set(fd.getAll('ger').map(Number));
+    const papelEscolhido = (await (await import('@/lib/db.js')).q1('SELECT chave FROM roles WHERE id=$1', [dados.role_id]))?.chave;
+    if (['colaborador', 'externo'].includes(papelEscolhido) && !subs.length && !deps.length) falha('Marque pelo menos um setor ou atividade da pessoa. Sem isso ela entra e não vê formulário.');
 
     await transacao(async (db) => {
       let antes = null;
@@ -196,6 +198,7 @@ export async function salvarLancamento(_e, fd) {
       if (id) {
         const antes = (await db.query('SELECT * FROM launches WHERE id=$1', [id])).rows[0];
         if (!antes) falha('Lançamento não encontrado.');
+        if (antes.permanente) d.status = 'captacao';
         await db.query(`UPDATE launches SET ${cols.map((c, i) => `${c}=$${i + 1}`).join(', ')}, updated_by=$${cols.length + 1}, updated_at=now() WHERE id=$${cols.length + 2}`,
           [...cols.map((c) => d[c]), u.id, id]);
         await auditar(db, { userId: u.id, acao: 'editar', entidade: 'launches', entidadeId: id, antes, depois: { ...d, atribuidos } });
@@ -299,7 +302,7 @@ export async function excluirLancamento(fd) {
   const id = Number(fd.get('id'));
   await transacao(async (db) => {
     const lanc = (await db.query('SELECT * FROM launches WHERE id=$1 FOR UPDATE', [id])).rows[0];
-    if (!lanc) return;
+    if (!lanc || lanc.permanente) return;
     const apagados = {};
     for (const t of ['automation_incidents', 'action_items', 'traffic_daily_entries', 'whatsapp_daily_entries', 'automation_daily_entries',
       'editor_daily_entries', 'live_results', 'manager_daily_closings', 'commercial_launch_results', 'onboarding_events', 'launch_user_assignments']) {

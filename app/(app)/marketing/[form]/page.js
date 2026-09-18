@@ -4,7 +4,7 @@ import { q, q1 } from '@/lib/db.js';
 import { hoje, fmtData, somarDias } from '@/lib/datas.js';
 import { moeda, numero, pct } from '@/lib/formato.js';
 import {
-  FORMULARIOS, formularioAplicavel, lancamentoAberto, DESCRICOES, ETAPAS_AUTOMACAO_ROTULOS, ETAPAS_MONITORADAS, PRIORIDADES,
+  FORMULARIOS, formularioAplicavel, lancamentosDoFormulario, lancamentoAberto, DESCRICOES, ETAPAS_AUTOMACAO_ROTULOS, ETAPAS_MONITORADAS, PRIORIDADES,
   TIPOS_ENTREGA, SITUACAO_EDITOR, PRIORIDADE_EDITOR, PLATAFORMAS_LIVE, SEMAFORO_OPCOES, GARGALOS, rotuloEtapa,
 } from '@/lib/formularios.js';
 import { formulariosDo, podeEditar, ehSuperadmin, gerenteDe } from '@/lib/perm.js';
@@ -79,7 +79,7 @@ export default async function PaginaFormulario(props) {
   } else {
     if (!ehSuperadmin(u) && !formulariosDo(u).includes(form)) return <><Topo titulo={titulo} /><Aviso tipo="erro">Este formulário não está atribuído a você.</Aviso></>;
     if (sub && !sub.formulario_ativo) return <><Topo titulo={titulo} /><Aviso>Este formulário foi desativado pelo administrador.</Aviso></>;
-    opcoes = (await lancamentosDoUsuario(u)).filter((l) => formularioAplicavel(form, l, dia));
+    opcoes = lancamentosDoFormulario(form, await lancamentosDoUsuario(u), dia);
     const podeGerir = ehSuperadmin(u) || gerenteDe(u, 'marketing');
     if (!opcoes.length && podeGerir) {
       return (

@@ -35,7 +35,7 @@ export default async function Lancamentos() {
               <td className="num">{l.orcamento ? moeda(l.orcamento, 0) : '—'}</td>
               <td className="num">{l.meta_cadastros ? numero(l.meta_cadastros) : '—'}</td>
               <td className="num">{l.equipe}</td>
-              <td><BotaoExcluir action={excluirLancamento} id={l.id} nome={l.nome} registros={l.registros} /></td>
+              <td>{l.permanente ? <span className="selo neutro">Fixo</span> : <BotaoExcluir action={excluirLancamento} id={l.id} nome={l.nome} registros={l.registros} />}</td>
             </tr>
           ))}</tbody>
         </table></div>
