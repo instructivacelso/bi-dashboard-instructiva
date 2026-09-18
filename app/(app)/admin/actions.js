@@ -219,7 +219,7 @@ export async function salvarLancamento(_e, fd) {
   return r;
 }
 
-// ---------- Resultado comercial por lançamento (manual até existir integração) ----------
+// ---------- Resultado comercial por lançamento (lançado manualmente) ----------
 export async function salvarComercial(_e, fd) {
   return executar(async () => {
     const u = await exigirUsuario();

@@ -148,7 +148,7 @@ export default async function DashboardMarketing(props) {
       </Bloco>
 
       {temVendas && (
-        <Bloco icone={DollarSign} titulo="Vendas" descricao="Lançadas por perfil autorizado ou por integração.">
+        <Bloco icone={DollarSign} titulo="Vendas" descricao="Lançadas por perfil autorizado.">
           <Kpi rotulo="Vendas" valor={numero(t.vendas)} cor={semaforo(t.vendas, m.vendas)} progresso={dividir(t.vendas, m.vendas)} meta={`conversão da lista ${pct(ind.conversaoVendas)}`} />
           <Kpi rotulo="Faturamento" valor={moeda(t.faturamento, 0)} cor={semaforo(t.faturamento, m.faturamento)} progresso={dividir(t.faturamento, m.faturamento)} />
           <Kpi rotulo="CAC" valor={moeda(ind.cac)} cor={semaforo(ind.cac, m.cacMax, 'menor')} />

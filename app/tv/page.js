@@ -111,7 +111,7 @@ export default async function PainelTV(props) {
           status={sup ? <Semaforo cor={sup.vencidos ? 'vermelho' : sup.criticosAbertos ? 'amarelo' : 'verde'} texto={sup.vencidos ? `${sup.vencidos} fora do SLA` : 'SLA em dia'} /> : null}
           itens={sup ? [['Em aberto', numero(sup.backlogFinal), `${numero(sup.criticosAbertos)} críticos`], ['Recebidos hoje', numero(sup.novos)], ['Resolvidos hoje', numero(sup.resolvidos), `taxa ${pct(sup.taxaResolucao)}`], ['SLA hoje', pct(sup.cumprimentoSla)]] : []} />
         <Setor titulo="Indicação"
-          itens={ind ? [['Indicações 30d', numero(ind.recebidas), `${numero(ind.validas)} válidas`], ['Vendas', numero(ind.vendas), moeda(ind.faturamento, 0)], ['Conversão', pct(ind.funil.vendaSobreValida)], ['Benefícios pendentes', numero(ind.beneficiosPendentes + ind.beneficiosAprovados)]] : []} />
+          itens={ind ? [['Indicações 30d', numero(ind.recebidas), `${numero(ind.validas)} válidas`], ['Vendas', numero(ind.vendas), moeda(ind.faturamento, 0)], ['Conversão', pct(ind.funil.conversaoGeral)], ['Benefícios pendentes', numero(ind.beneficiosPendentes + ind.beneficiosAprovados)]] : []} />
         <Setor titulo="CS/CX" cor={cs?.health?.critico ? 'vermelho' : ''}
           status={cs ? <Semaforo cor={cs.health.critico ? 'vermelho' : cs.health.risco ? 'amarelo' : 'verde'} texto={`${numero(cs.health.risco + cs.health.critico)} em risco`} /> : null}
           itens={cs ? [['Alunos ativos', numero(cs.ativos)], ['NPS 30d', cs.satisfacao.nps === null ? 'sem dados' : numero(cs.satisfacao.nps), `${numero(cs.satisfacao.respostas)} respostas`], ['Receita preservada', moeda(cs.retencao.preservada, 0)], ['Engajamento', pct(cs.engajamento.taxaEngajamento)]] : []} />

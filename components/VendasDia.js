@@ -69,7 +69,7 @@ export default function VendasDia({ produtos, funis, pagamentos, status, motivos
                   </select></div>
               </div>
               <div className="campo"><label htmlFor={`v${l.k}_identificador`}>Identificador do pedido (opcional)</label>
-                <input id={`v${l.k}_identificador`} name={`v${l.k}_identificador`} type="text" value={l.ident} onChange={(e) => up(l.k, 'ident', e.target.value)} placeholder="Ex.: código da Hotmart" maxLength={80} /></div>
+                <input id={`v${l.k}_identificador`} name={`v${l.k}_identificador`} type="text" value={l.ident} onChange={(e) => up(l.k, 'ident', e.target.value)} placeholder="Ex.: código do pedido" maxLength={80} /></div>
             </div>
           ))}
           <button type="button" className="btn sec" onClick={() => setLinhas((ls) => [...ls, nova()])}>+ Adicionar outra venda</button>

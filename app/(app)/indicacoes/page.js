@@ -1,51 +1,68 @@
 import { exigirUsuario } from '@/lib/auth.js';
-import { fmtDataHora } from '@/lib/datas.js';
-import { ETAPAS, VALIDACOES, AVISOS, veTodaIndicacao, registraIndicacao, ehDaIndicacao, gereBeneficios } from '@/lib/indicacao.js';
+import { fmtData } from '@/lib/datas.js';
+import { ETAPAS, ORDEM_ETAPAS, ETAPAS_FINAIS, veTodaIndicacao, registraIndicacao, ehDaIndicacao, gereBeneficios, ehColaboradorIndicacao } from '@/lib/indicacao.js';
 import { listaIndicacoes, vendedoresIndicacao } from '@/lib/dadosIndicacao.js';
-import { Topo, Aviso, Vazio, Semaforo } from '@/components/Ui.js';
+import { q } from '@/lib/db.js';
+import { Topo, Aviso } from '@/components/Ui.js';
 
 export const dynamic = 'force-dynamic';
-const COR_VAL = { valida: 'verde', pendente: 'amarelo', invalida: 'vermelho', duplicada: 'vermelho', telefone_incorreto: 'vermelho', fora_perfil: 'neutro' };
 
-export default async function Indicacoes(props) {
+export default async function Pipeline(props) {
   const sp = await props.searchParams;
   const u = await exigirUsuario();
   if (!ehDaIndicacao(u)) return <><Topo titulo="Indicações" /><Aviso tipo="erro">Área do time de Indicação.</Aviso></>;
-  const tudo = veTodaIndicacao(u) || registraIndicacao(u);
-  const f = { etapa: ETAPAS[sp.etapa] ? sp.etapa : null, validacao: VALIDACOES[sp.validacao] ? sp.validacao : null, vendedor: tudo ? Number(sp.vendedor) || null : null, busca: String(sp.busca || '').trim().slice(0, 80) || null };
-  const [lista, vend] = await Promise.all([listaIndicacoes(u, tudo, f), tudo ? vendedoresIndicacao() : []]);
-  const pend = lista.filter((r) => r.validacao === 'pendente').length;
+  const tudo = veTodaIndicacao(u);
+  const f = { busca: String(sp.busca || '').trim().slice(0, 80) || null, vendedor: tudo ? Number(sp.vendedor) || null : null };
+  let lista = await listaIndicacoes(u, tudo, f);
+  if (tudo && Number(sp.responsavel)) lista = lista.filter((r) => r.responsavel_id === Number(sp.responsavel));
+  const [vend, equipe] = await Promise.all([tudo ? vendedoresIndicacao() : [], tudo ? q(`SELECT DISTINCT x.id, x.nome FROM users x JOIN user_department_assignments a ON a.user_id=x.id JOIN departments d ON d.id=a.department_id WHERE x.ativo AND d.slug='indicacoes' ORDER BY x.nome`) : []]);
+  const hojeISO = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
+  const colunas = sp.finais ? [...ORDEM_ETAPAS, ...ETAPAS_FINAIS] : ORDEM_ETAPAS;
+  const porEtapa = (e) => lista.filter((r) => r.etapa === e);
+  const finais = lista.filter((r) => ETAPAS_FINAIS.includes(r.etapa)).length;
   return (
     <>
-      <Topo titulo={tudo ? 'Indicações' : 'Minhas indicações'} descricao={`${lista.length} no filtro${pend ? ` · ${pend} aguardando validação` : ''}`}>
-        {veTodaIndicacao(u) && <a className="btn sec" href="/indicacoes/dashboard">Dashboard</a>}
-        {veTodaIndicacao(u) && <a className="btn sec" href="/indicacoes/campanhas">Campanhas</a>}
+      <Topo titulo={tudo ? 'Pipeline de indicação' : 'Meu pipeline'} descricao={`${lista.length} indicações${finais ? ` · ${finais} encerradas (sem resposta, sem interesse, inválidas ou perdidas)` : ''}`}>
+        {ehColaboradorIndicacao(u) && <a className="btn sec" href="/indicacoes/painel">Meu painel</a>}
+        {ehColaboradorIndicacao(u) && <a className="btn sec" href="/indicacoes/diario">Formulário do dia</a>}
+        {tudo && <a className="btn sec" href="/indicacoes/dashboard">Dashboard</a>}
+        {tudo && <a className="btn sec" href="/indicacoes/campanhas">Campanhas</a>}
+        {tudo && <a className="btn sec" href="/indicacoes/metas">Metas</a>}
         {gereBeneficios(u) && <a className="btn sec" href="/indicacoes/beneficios">Benefícios</a>}
-        {registraIndicacao(u) && <a className="btn" href="/indicacoes/registrar">Registrar convite e indicações</a>}
+        {registraIndicacao(u) && <a className="btn" href="/indicacoes/registrar">Registrar indicações</a>}
       </Topo>
       <form className="filtros" method="get">
         <div className="campo"><label htmlFor="f-b">Buscar</label><input id="f-b" name="busca" type="search" defaultValue={sp.busca || ''} placeholder="Nome, telefone ou aluno indicador" /></div>
-        <div className="campo"><label htmlFor="f-v">Validação</label><select id="f-v" name="validacao" defaultValue={f.validacao || ''}><option value="">Todas</option>{Object.entries(VALIDACOES).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
-        <div className="campo"><label htmlFor="f-e">Etapa</label><select id="f-e" name="etapa" defaultValue={f.etapa || ''}><option value="">Todas</option>{Object.entries(ETAPAS).map(([k, r]) => <option key={k} value={k}>{r}</option>)}</select></div>
-        {tudo && <div className="campo"><label htmlFor="f-vd">Vendedor</label><select id="f-vd" name="vendedor" defaultValue={f.vendedor || ''}><option value="">Todos</option>{vend.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>}
+        {tudo && <div className="campo"><label htmlFor="f-r">Colaborador</label><select id="f-r" name="responsavel" defaultValue={sp.responsavel || ''}><option value="">Todos</option>{equipe.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>}
+        {tudo && <div className="campo"><label htmlFor="f-v">Vendedor</label><select id="f-v" name="vendedor" defaultValue={sp.vendedor || ''}><option value="">Todos</option>{vend.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>}
+        <label className="escolha" style={{ alignSelf: 'end' }}><span style={{ display: 'inline-flex', gap: 8 }}><input type="checkbox" name="finais" value="1" defaultChecked={!!sp.finais} /> Mostrar encerradas</span></label>
         <button className="btn peq" type="submit">Filtrar</button>
       </form>
-      {lista.length === 0 ? <Vazio>Nenhuma indicação encontrada.</Vazio> : (
-        <div className="painel tabela-wrap"><table>
-          <thead><tr><th>Indicado</th><th>Indicador</th><th>Validação</th><th>Aviso</th><th>Etapa</th><th>Vendedor</th><th>Recebida em</th></tr></thead>
-          <tbody>{lista.map((r) => (
-            <tr key={r.id}>
-              <td><a href={`/indicacoes/${r.id}`}><b>{r.nome}</b></a><br /><span className="suave pequeno">{r.telefone || r.telefone_digitado}{r.interesse ? ` · ${r.interesse}` : ''}</span></td>
-              <td className="pequeno">{r.indicador}<br /><span className="suave">{r.campanha}</span></td>
-              <td><Semaforo cor={COR_VAL[r.validacao]} texto={VALIDACOES[r.validacao]} /></td>
-              <td className="pequeno">{r.aviso === 'bloqueado' ? <Semaforo cor="vermelho" texto="Bloqueado" /> : AVISOS[r.aviso]}</td>
-              <td className="pequeno">{ETAPAS[r.etapa]}{r.tentativas ? ` · ${r.tentativas} tent.` : ''}</td>
-              <td className="pequeno">{r.vendedor || '—'}</td>
-              <td className="pequeno suave">{fmtDataHora(r.created_at)}</td>
-            </tr>
-          ))}</tbody>
-        </table></div>
-      )}
+      <div className="kanban">
+        {colunas.map((e) => {
+          const cards = porEtapa(e);
+          return (
+            <section key={e} className={`kanban-col ${ETAPAS_FINAIS.includes(e) ? 'final' : ''}`}>
+              <header><b>{ETAPAS[e]}</b><span>{cards.length}</span></header>
+              {cards.slice(0, 60).map((r) => {
+                const vencido = r.proximo_contato && String(r.proximo_contato).slice(0, 10) < hojeISO;
+                return (
+                  <a key={r.id} href={`/indicacoes/${r.id}`} className={`kanban-card ${vencido ? 'vencido' : ''} ${r.aviso === 'bloqueado' ? 'bloqueado' : ''}`}>
+                    <b>{r.nome}</b>
+                    <span>indicado por {r.indicador}</span>
+                    {r.interesse && <span>{r.interesse}</span>}
+                    <span className="kanban-rodape">
+                      {r.proximo_contato ? <em className={vencido ? 'atrasado' : ''}>{vencido ? 'atrasado · ' : ''}{fmtData(r.proximo_contato).slice(0, 5)}</em> : <em>sem próximo contato</em>}
+                      {tudo && r.responsavel ? <i>{r.responsavel.split(' ')[0]}</i> : r.vendedor ? <i>{r.vendedor.split(' ')[0]}</i> : null}
+                    </span>
+                  </a>
+                );
+              })}
+              {cards.length > 60 && <p className="suave pequeno">+{cards.length - 60} (use a busca)</p>}
+            </section>
+          );
+        })}
+      </div>
     </>
   );
 }

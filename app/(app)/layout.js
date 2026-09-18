@@ -7,13 +7,13 @@ import BotaoTema from '@/components/BotaoTema.js';
 import { rotaFormulario } from '@/lib/formularios.js';
 import { veDashboardComercial, cidadesVisiveis, ehDiretorComercial, cidadeDoVendedor } from '@/lib/comercial.js';
 import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
-import { ehDaIndicacao, veTodaIndicacao, registraIndicacao } from '@/lib/indicacao.js';
+import { ehDaIndicacao, veTodaIndicacao, registraIndicacao, ehColaboradorIndicacao } from '@/lib/indicacao.js';
 import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 import { sair, sairVerComo } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
-const CURTOS = { cs_gerente: 'Fechamento do gerente', indicacao_gerente: 'Fechamento do gerente', suporte_fechamento: 'Fechamento do dia', suporte_gerente: 'Fechamento do gerente', trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial' };
+const CURTOS = { cs_gerente: 'Fechamento do gerente', indicacao_gerente: 'Fechamento do gerente', indicacao_colaborador: 'Formulário do dia', suporte_fechamento: 'Fechamento do dia', suporte_gerente: 'Fechamento do gerente', trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial' };
 
 async function montarMenu(u) {
   // Colaborador e prestador externo: só os próprios formulários e histórico
@@ -23,7 +23,8 @@ async function montarMenu(u) {
     else if (cidadesVisiveis(u).length) itens.push({ href: '/comercial/dashboard', rotulo: 'Dashboard comercial', icone: 'dashboard' });
     if (ehDoSuporte(u)) itens.push({ href: '/suporte', rotulo: 'Meus atendimentos', icone: 'suporte' });
     if (ehDoCs(u)) itens.push({ href: '/cs', rotulo: 'Minha carteira', icone: 'cscx' });
-    if (ehDaIndicacao(u)) itens.push({ href: '/indicacoes', rotulo: registraIndicacao(u) ? 'Indicações' : 'Minhas indicações', icone: 'indicacoes' });
+    if (ehColaboradorIndicacao(u)) itens.push({ href: '/indicacoes/painel', rotulo: 'Meu painel de indicação', icone: 'dashboard' });
+    if (ehDaIndicacao(u)) itens.push({ href: '/indicacoes', rotulo: registraIndicacao(u) ? 'Pipeline de indicação' : 'Minhas indicações', icone: 'indicacoes' });
     if (u.lotacoes.some((l) => l.setor === 'marketing')) itens.push({ href: '/historico', rotulo: 'Meus envios', icone: 'historico' });
     return [{ itens }];
   }
@@ -36,7 +37,7 @@ async function montarMenu(u) {
   for (const s of meus) {
     const [pai, filho] = s.nome.split(' — ');
     const atividades = (s.slug === 'suporte' && ehDoSuporte(u) ? [{ href: '/suporte', rotulo: 'Atendimentos' }] : [])
-      .concat(s.slug === 'indicacoes' && ehDaIndicacao(u) ? [{ href: '/indicacoes', rotulo: 'Indicações' }] : [])
+      .concat(s.slug === 'indicacoes' && ehDaIndicacao(u) ? [{ href: '/indicacoes', rotulo: 'Pipeline' }] : [])
       .concat(s.slug === 'cscx' && ehDoCs(u) ? [{ href: '/cs', rotulo: 'Carteira de alunos' }] : []).concat(subs.filter((x) => x.slug === s.slug).map((x) => ({
       href: x.formulario && x.formulario_ativo && x.modulo_ativo ? rotaFormulario(x.formulario) : `/setor/${s.slug}#${x.sub}`,
       rotulo: CURTOS[x.formulario] || x.nome,

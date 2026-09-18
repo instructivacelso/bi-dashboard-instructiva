@@ -4,7 +4,7 @@ import { hoje, fmtData, somarDias } from '@/lib/datas.js';
 import { numero, pct, moeda } from '@/lib/formato.js';
 import { variacao } from '@/lib/calc.js';
 import { STATUS_CAMPANHA, CLASSIFICACAO, ETAPAS_QUEBRA, GARGALOS_INDICACAO, TIPOS_FEEDBACK } from '@/lib/indicacao.js';
-import { numerosIndicacao, campanhasAtivas, todasCampanhas } from '@/lib/dadosIndicacao.js';
+import { numerosIndicacao, campanhasAtivas, todasCampanhas, consolidarDiarios } from '@/lib/dadosIndicacao.js';
 import { configuracao } from '@/lib/dadosComercial.js';
 import { Topo, Aviso, Semaforo } from '@/components/Ui.js';
 import FormEstado from '@/components/FormEstado.js';
@@ -25,13 +25,17 @@ export default async function GerenteIndicacao() {
   if (!u.lotacoes.some((l) => l.formulario === 'indicacao_gerente')) return <><Topo titulo="Fechamento do gerente de Indicação" /><Aviso tipo="erro">Este formulário é do gerente de Indicação. Peça ao administrador para marcar a atividade “Gerente de Indicação”.</Aviso></>;
   const dia = hoje();
   const d30 = somarDias(dia, -29);
-  const [n, n30, camps, todas, atual, anterior, limite, pessoas] = await Promise.all([
+  const [n, n30, camps, todas, atual, anterior, limite, pessoas, diarios, colabs] = await Promise.all([
     numerosIndicacao(dia, dia), numerosIndicacao(d30, dia), campanhasAtivas(), todasCampanhas(),
     q1('SELECT * FROM referral_manager_closings WHERE user_id=$1 AND data_ref=$2', [u.id, dia]),
     q1('SELECT numeros, data_ref FROM referral_manager_closings WHERE data_ref < $1 ORDER BY data_ref DESC LIMIT 1', [dia]),
     configuracao('indicacao_horario_limite', '19:00'),
     q(`SELECT DISTINCT x.id, x.nome FROM users x JOIN user_department_assignments a ON a.user_id=x.id JOIN departments d ON d.id=a.department_id WHERE x.ativo AND d.slug='indicacoes' ORDER BY x.nome`),
+    consolidarDiarios(dia, dia),
+    q(`SELECT DISTINCT x.id, x.nome FROM users x JOIN user_department_assignments a ON a.user_id=x.id JOIN departments d ON d.id=a.department_id JOIN subdepartments s ON s.id=a.subdepartment_id WHERE x.ativo AND d.slug='indicacoes' AND s.slug='coleta' ORDER BY x.nome`),
   ]);
+  const faltam = colabs.filter((c) => !diarios.pessoas.some((p) => p.id === c.id));
+  const pedidosAjuda = diarios.linhas.filter((l) => l.precisa_ajuda);
   const v = atual || {};
   const a = anterior?.numeros;
   const equipe = n30.porVendedor;
@@ -42,8 +46,8 @@ export default async function GerenteIndicacao() {
   const metaInd = camps.reduce((s, c) => s + (c.meta_diaria_indicacoes || 0), 0) || null;
   const metaVend = camps.reduce((s, c) => s + (c.meta_diaria_vendas || 0), 0) || null;
   const comp = a ? [['Convites', n.convidados, a.convidados, numero], ['Indicações', n.recebidas, a.recebidas, numero], ['Validação', n.funil.validacao, a.funil?.validacao, pct],
-    ['Contatos', n.contatadas, a.contatadas, numero], ['Respostas', n.responderam, a.responderam, numero], ['Agendamentos', n.agendamentos, a.agendamentos, numero],
-    ['Propostas', n.propostas, a.propostas, numero], ['Vendas', n.vendas, a.vendas, numero], ['Faturamento', n.faturamento, a.faturamento, (x) => moeda(x, 0)], ['Benefícios', n.beneficiosEntregues, a.beneficiosEntregues, numero]] : [];
+    ['Trabalhadas', n.trabalhados, a.trabalhados, numero], ['Contato realizado', n.responderam, a.responderam, numero], ['Encaminhadas', n.encaminhadas, a.encaminhadas, numero],
+    ['Em negociação', n.negociacao, a.negociacao, numero], ['Vendas', n.vendas, a.vendas, numero], ['Faturamento', n.faturamento, a.faturamento, (x) => moeda(x, 0)], ['Benefícios', n.beneficiosEntregues, a.beneficiosEntregues, numero]] : [];
 
   return (
     <>
@@ -108,13 +112,24 @@ export default async function GerenteIndicacao() {
             <Texto nome="acao_conversao" rotulo="Ação para melhorar a conversão" valor={v.acao_conversao} obrig />
           </Sec>
           <Sec titulo="Equipe e feedbacks">
-            <span className="rot"><B n="8">Desempenho da equipe (últimos 30 dias)</B></span>
-            {equipe.length === 0 ? <p className="suave pequeno">Nenhuma indicação distribuída a vendedores no período.</p> : (
+            <span className="rot"><B n="8">Formulários do dia dos colaboradores (automático)</B></span>
+            {diarios.pessoas.length === 0 ? <p className="suave pequeno">Nenhum colaborador enviou o formulário de hoje ainda.</p> : (
               <div className="tabela-wrap"><table>
-                <thead><tr><th>Vendedor</th><th className="num">Recebidas</th><th className="num">Trabalhadas</th><th className="num">Tentativas</th><th className="num">Vendas</th><th className="num">Faturamento</th><th className="num">Conversão</th><th className="num">Pendentes</th></tr></thead>
+                <thead><tr><th>Colaborador</th><th className="num">Recebidas</th><th className="num">Trabalhados</th><th className="num">Responderam</th><th className="num">Validadas</th><th className="num">Follow-ups</th><th className="num">Encaminhadas</th><th className="num">Vendas</th><th className="num">Valor</th></tr></thead>
+                <tbody>{[...diarios.pessoas, { id: 'total', nome: 'Total da equipe', ...diarios.total }].map((p) => (
+                  <tr key={p.id} style={p.id === 'total' ? { fontWeight: 700 } : undefined}><td>{p.nome}</td><td className="num">{numero(p.recebidas)}</td><td className="num">{numero(p.trabalhados)}</td><td className="num">{numero(p.responderam)}</td><td className="num">{numero(p.validadas)}</td><td className="num">{numero(p.followups)}</td><td className="num">{numero(p.encaminhadas)}</td><td className="num">{numero(p.vendas_qtd)}</td><td className="num">{moeda(p.vendas_valor, 0)}</td></tr>
+                ))}</tbody>
+              </table></div>
+            )}
+            {faltam.length > 0 && <Aviso>Ainda não enviaram: {faltam.map((c) => c.nome).join(', ')}.</Aviso>}
+            {pedidosAjuda.map((l) => <Aviso key={l.id} tipo="erro">{l.nome} pediu ajuda: {l.ajuda_descricao}</Aviso>)}
+            <span className="rot" style={{ marginTop: 14, display: 'block' }}>Pipeline por colaborador (últimos 30 dias)</span>
+            {equipe.length === 0 ? <p className="suave pequeno">Nenhuma indicação no período.</p> : (
+              <div className="tabela-wrap"><table>
+                <thead><tr><th>Colaborador</th><th className="num">Recebidas</th><th className="num">Trabalhadas</th><th className="num">Encaminhadas</th><th className="num">Vendas</th><th className="num">Faturamento</th><th className="num">Conversão</th><th className="num">Pendentes</th></tr></thead>
                 <tbody>{equipe.map((l) => (
                   <tr key={l.id}><td>{l.nome} {l.id === destaque?.id && <Semaforo cor="verde" texto="Destaque" />} {l.id === acompanhar?.id && <Semaforo cor="amarelo" texto="Acompanhar" />} {l.id === carregado?.id && l.pendentes > 0 && <Semaforo cor="vermelho" texto="Mais carregado" />} {l.id === livre?.id && <Semaforo cor="neutro" texto="Com capacidade" />}</td>
-                    <td className="num">{numero(l.recebidas)}</td><td className="num">{numero(l.trabalhadas)}</td><td className="num">{numero(l.tentativas)}</td><td className="num">{numero(l.vendas)}</td><td className="num">{moeda(l.faturamento, 0)}</td><td className="num">{pct(l.conversao)}</td><td className="num">{numero(l.pendentes)}</td></tr>
+                    <td className="num">{numero(l.recebidas)}</td><td className="num">{numero(l.trabalhadas)}</td><td className="num">{numero(l.encaminhadas)}</td><td className="num">{numero(l.vendas)}</td><td className="num">{moeda(l.faturamento, 0)}</td><td className="num">{pct(l.conversao)}</td><td className="num">{numero(l.pendentes)}</td></tr>
                 ))}</tbody>
               </table></div>
             )}

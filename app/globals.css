@@ -452,3 +452,20 @@ form[data-ultima="nao"] .rodape-fixo button[type=submit] { display: none; }
 .tv-fechamentos .selo { font-size: 0.9rem; padding: 6px 12px; }
 .tv-fechamentos .tv-rodape { margin-left: auto; }
 @media (max-width: 1400px) { .tv { height: auto; overflow: visible; } .tv-setores-grade { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } .tv-meio { grid-template-columns: 1fr; } }
+
+/* ---------- Kanban de indicação ---------- */
+.kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 10px; align-items: start; }
+.kanban-col { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+.kanban-col.final { opacity: 0.85; }
+.kanban-col header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 4px 4px 6px; }
+.kanban-col header span { background: var(--card); border: 1px solid var(--linha); border-radius: 999px; padding: 1px 9px; font-weight: 700; font-size: 0.78rem; }
+.kanban-card { display: flex; flex-direction: column; gap: 3px; background: var(--card); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; color: inherit; text-decoration: none; font-size: 0.84rem; box-shadow: var(--sombra-1, 0 1px 2px rgba(0,0,0,.06)); }
+.kanban-card:hover { border-color: var(--laranja); }
+.kanban-card b { font-size: 0.92rem; }
+.kanban-card span { color: var(--suave); }
+.kanban-card.vencido { border-left: 3px solid var(--vermelho); }
+.kanban-card.bloqueado { opacity: 0.6; }
+.kanban-rodape { display: flex; justify-content: space-between; gap: 6px; margin-top: 4px; font-size: 0.76rem; }
+.kanban-rodape em { font-style: normal; }
+.kanban-rodape em.atrasado { color: var(--vermelho); font-weight: 700; }
+.kanban-rodape i { font-style: normal; font-weight: 600; color: var(--texto); }

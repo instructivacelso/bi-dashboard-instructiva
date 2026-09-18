@@ -11,7 +11,7 @@ import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
 import { ehDaIndicacao, veTodaIndicacao } from '@/lib/indicacao.js';
 import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 
-const ICONE = { cs_gerente: Users, indicacao_gerente: Users, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
+const ICONE = { cs_gerente: Users, indicacao_gerente: Users, indicacao_colaborador: ClipboardList, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
 const hora = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
 
 function CartaoFormulario({ t }) {

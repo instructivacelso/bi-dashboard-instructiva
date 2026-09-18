@@ -18,7 +18,7 @@ export default async function Comercial() {
   ]);
   return (
     <>
-      <Topo titulo="Vendas por lançamento" descricao="Lançamento manual até a integração com Hotmart, TMB e Greenn. O Marketing não precisa redigitar esses números: eles alimentam CAC, ROAS e o fim do funil." />
+      <Topo titulo="Vendas por lançamento" descricao="Lançado aqui por quem tem permissão. O Marketing não precisa redigitar esses números: eles alimentam CAC, ROAS e o fim do funil." />
       <div className="grade g2" style={{ alignItems: 'start' }}>
         <div className="painel">
           <FormEstado action={salvarComercial} botao="Salvar resultado">

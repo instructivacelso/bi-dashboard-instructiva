@@ -1,6 +1,6 @@
 import { exigirUsuario } from '@/lib/auth.js';
 import { q } from '@/lib/db.js';
-import { RESPOSTAS_CONVITE, registraIndicacao } from '@/lib/indicacao.js';
+import { RESPOSTAS_CONVITE, ORIGENS, registraIndicacao, veTodaIndicacao } from '@/lib/indicacao.js';
 import { campanhasAtivas } from '@/lib/dadosIndicacao.js';
 import { Topo, Aviso, Vazio } from '@/components/Ui.js';
 import FormEstado from '@/components/FormEstado.js';
@@ -13,11 +13,12 @@ export const dynamic = 'force-dynamic';
 export default async function Registrar() {
   const u = await exigirUsuario();
   if (!registraIndicacao(u)) return <Aviso tipo="erro">Seu perfil não registra indicações.</Aviso>;
-  const [camps, produtos] = await Promise.all([campanhasAtivas(), q('SELECT id, nome FROM products WHERE ativo ORDER BY nome')]);
+  const [camps, produtos, equipe] = await Promise.all([campanhasAtivas(), q('SELECT id, nome FROM products WHERE ativo ORDER BY nome'),
+    veTodaIndicacao(u) ? q(`SELECT DISTINCT x.id, x.nome FROM users x JOIN user_department_assignments a ON a.user_id=x.id JOIN departments d ON d.id=a.department_id JOIN subdepartments s ON s.id=a.subdepartment_id WHERE x.ativo AND d.slug='indicacoes' AND s.slug='coleta' ORDER BY x.nome`) : []]);
   if (!camps.length) return <><Topo titulo="Registrar convite e indicações" /><Vazio>Nenhuma campanha ativa. O gerente cadastra em Indicações → Campanhas.</Vazio></>;
   return (
     <>
-      <Topo titulo="Registrar convite e indicações" descricao="Registre o convite feito ao aluno e, se ele aceitou, os contatos que indicou. Telefones repetidos são marcados como duplicados automaticamente.">
+      <Topo titulo="Registrar convite e indicações" descricao="Registre o convite ao aluno e os contatos que ele indicou. O telefone recebe +55 automaticamente; telefone ou e-mail já indicado é avisado e marcado como duplicado.">
         <a className="btn sec" href="/indicacoes">Voltar</a>
       </Topo>
       <div className="painel form-claro">
@@ -29,12 +30,17 @@ export default async function Registrar() {
               <Texto nome="aluno_nome" rotulo="Nome do aluno" obrig />
               <Texto nome="aluno_contato" rotulo="E-mail ou telefone do aluno" obrig />
             </div>
+            <div className="linha-campos">
+              <Selecao nome="origem_indicacao" rotulo="Origem da indicação" opcoes={Object.entries(ORIGENS).map(([valor, rotulo]) => ({ valor, rotulo }))} />
+              {equipe.length > 0 && <Selecao nome="responsavel_id" rotulo="Colaborador responsável" obrig={false} vazio="Eu mesmo" opcoes={equipe.map((x) => ({ valor: x.id, rotulo: x.nome }))} />}
+            </div>
             <Escolha nome="resposta" rotulo="Resposta ao convite" opcoes={RESPOSTAS_CONVITE} />
           </div>
           <div className="secao-form" data-se="resposta:aceitou"><h3>Contatos indicados</h3>
             <Numero nome="qtd" rotulo="Quantos contatos o aluno indicou?" dica="Oriente o aluno a avisar cada contato antes da abordagem." />
             <ListaQtd campoQtd="qtd" prefixo="ind" titulo="Contato"
               campos={[{ nome: 'nome', rotulo: 'Nome' }, { nome: 'telefone', rotulo: 'Telefone com DDD', tipo: 'telefone' },
+                { nome: 'email', rotulo: 'E-mail', opcional: true }, { nome: 'cidade', rotulo: 'Cidade/UF', opcional: true },
                 { nome: 'aviso', rotulo: 'O contato foi avisado?', tipo: 'opcao', opcoes: { avisado: 'Aluno avisou', nao_confirmado: 'Não confirmado', autorizado: 'Contato autorizou' } },
                 { nome: 'interesse', rotulo: 'Curso de interesse', tipo: 'opcao', opcional: true, opcoes: Object.fromEntries(produtos.map((p) => [p.id, p.nome])) }]} />
           </div>

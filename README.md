@@ -60,10 +60,16 @@ scripts/              migrate e seed
 tests/                testes das regras
 ```
 
-## Próximas etapas (aguardando aprovação)
-- Formulários de Comercial, Financeiro, RH, Suporte, CS/CX, Indicações e Acadêmico.
-- Webhooks Hotmart/TMB/Greenn e n8n alimentando `commercial_launch_results` e `onboarding_events`.
+## Próximas etapas
+- Módulo Financeiro (plano em aprovação), RH, Pós-venda e Acadêmico.
 - Envio de e-mail para recuperação de senha (hoje o admin gera o link).
+- O sistema funciona 100% por formulário: não há integração com plataformas de venda, WhatsApp ou automações.
+
+## Time de Indicação (colaborador)
+- Cadastre a pessoa em **Indicações → Equipe**, atividade **Colaborador de indicação**. Ela passa a ver o **Formulário do dia** (10 campos), **Meu painel** e **Meu pipeline** (Kanban de 13 estágios) — somente com as próprias indicações.
+- O vendedor (atividade **Vendas por indicação**) vê só as oportunidades encaminhadas a ele e atualiza negociação, venda ou perda.
+- Encaminhar ao vendedor exige vendedor e próximo passo. Validar bloqueia telefone duplicado. A cada 5 validadas do mesmo aluno, o sistema gera o benefício e o número do sorteio; o colaborador registra a escolha (3 cursos, cashback de R$ 250 ou apostila) em **Benefícios**.
+- O gerente define metas por colaborador e os prazos dos alertas em **Indicações → Metas**, e recebe os formulários da equipe consolidados no próprio fechamento.
 
 ## Comercial (Jesuítas e Toledo)
 - Vendedor: cadastre a pessoa em **Comercial → Jesuítas/Toledo → Equipe**, atividade **Vendedores**. A cidade do formulário vem desse cadastro e o vendedor não consegue alterar.
@@ -84,7 +90,7 @@ tests/                testes das regras
 - Vendedor (atividade **Vendas por indicação**): vê só as indicações dele e avança no funil até a venda. Contato bloqueado não recebe nova tentativa.
 - Benefícios: gerados sozinhos ao atingir a quantidade de indicações **validadas**; aprovação e entrega em **Indicações → Benefícios** (gerente ou Financeiro).
 
-## CS/CX (registro manual até a integração com Hotmart, Panda e Academy)
+## CS/CX (registro manual pela equipe)
 - Colaborador: **CS/CX → Equipe**, atividade **Carteira de alunos**. Cuida da própria carteira: adiciona alunos, atualiza a ficha (onboarding, progresso, último acesso) e registra contatos, pesquisas (NPS/CSAT/CES), voz do cliente, cancelamentos e oportunidades.
 - Gerente: atividade **Gerente de CS/CX**, tipo **Gerente do setor**. Vê todas as carteiras, ajusta a **regra do health score** (cada alteração cria uma nova versão e recalcula todos os alunos), envia o fechamento diário e acompanha o **Dashboard CS/CX**.
 - O health score é recalculado a cada atualização de ficha ou novo registro, e guarda a versão da regra usada.
