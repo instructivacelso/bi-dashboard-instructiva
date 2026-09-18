@@ -121,3 +121,44 @@ test('leitor: divergência > 0 exige motivo, ação, responsável e prazo; fecha
   assert.equal(ok.cabecalho.divergencia_responsavel_id, 7);
   assert.throws(() => lerFechamentoFinanceiro(form({ ...base, status: 'fechado', bancos_conciliados: 'nao' }), CTX), /conciliados/);
 });
+
+import { montarDRE, pontoEquilibrio, cac, margemProduto, ratearPorReceita } from '../lib/financeiro.js';
+
+test('DRE gerencial: receita líquida, margem de contribuição, EBITDA e resultado', () => {
+  const d = montarDRE({ receitaBruta: 100000, taxas: 3000, impostos: 7000, custosVariaveis: 20000, marketing: 10000, custosFixos: 25000, pessoal: 15000, depreciacao: 2000, juros: 1000 });
+  assert.equal(d.deducoes, 10000);
+  assert.equal(d.receitaLiquida, 90000);
+  assert.equal(d.variaveis, 30000);
+  assert.equal(d.margemContribuicao, 60000);
+  assert.equal(d.margemPct, 60000 / 90000); // ~0,667
+  assert.equal(d.fixos, 40000);
+  assert.equal(d.ebitda, 20000);
+  assert.equal(d.resultado, 17000); // 20000 - 2000 - 1000
+});
+
+test('DRE sem receita não quebra (margem = sem dados)', () => {
+  const d = montarDRE({});
+  assert.equal(d.receitaLiquida, 0);
+  assert.equal(d.margemPct, null);
+  assert.equal(d.resultado, 0);
+});
+
+test('ponto de equilíbrio = custos fixos ÷ margem de contribuição %', () => {
+  assert.equal(pontoEquilibrio(40000, 0.5), 80000);
+  assert.equal(pontoEquilibrio(40000, 0), null); // margem zero/negativa => sem equilíbrio
+  assert.equal(pontoEquilibrio(40000, null), null);
+});
+
+test('CAC e margem por produto', () => {
+  assert.equal(cac(10000, 25), 400);
+  assert.equal(cac(10000, 0), null);
+  const m = margemProduto(5000, 3500);
+  assert.equal(m.margem, 1500);
+  assert.equal(m.pct, 0.3);
+});
+
+test('rateio de custo indireto pela participação na receita', () => {
+  const r = ratearPorReceita(1000, [{ id: 1, receita: 7000 }, { id: 2, receita: 3000 }]);
+  assert.deepEqual(r, [{ id: 1, rateio: 700 }, { id: 2, rateio: 300 }]);
+  assert.deepEqual(ratearPorReceita(1000, [{ id: 1, receita: 0 }]), [{ id: 1, rateio: 0 }]); // sem receita não quebra
+});

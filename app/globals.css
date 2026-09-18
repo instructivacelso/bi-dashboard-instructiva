@@ -474,3 +474,12 @@ form[data-ultima="nao"] .rodape-fixo button[type=submit] { display: none; }
 .lista-simples { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .lista-simples > li { border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; background: var(--card); }
 .lista-simples .form { gap: 8px; }
+
+/* Financeiro — tabela do DRE */
+table.dre td { padding: 7px 10px; }
+table.dre tr.linha-forte { font-weight: 700; }
+table.dre tr.linha-forte td { border-top: 1px solid var(--linha); background: var(--bg-2); }
+
+/* Acadêmico — mover conteúdo no card do Kanban */
+.kanban-card .mover { display: flex; gap: 6px; margin-top: 6px; }
+.kanban-card .mover select { flex: 1; font-size: 0.8rem; padding: 4px 6px; }

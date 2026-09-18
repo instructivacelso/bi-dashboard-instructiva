@@ -28,6 +28,7 @@ export default async function PainelFinanceiro() {
     <>
       <Topo titulo="Financeiro — painel do dia" descricao={`${fmtData(dia)} · ${n.temFechamento ? `fechamento ${STATUS_FECHAMENTO[n.statusFechamento]}` : `sem fechamento hoje (saldo de ${n.dataBase ? fmtData(n.dataBase) : '—'})`}`}>
         <Semaforo cor={cor} texto={cor === 'verde' ? 'Caixa saudável' : cor === 'amarelo' ? 'Atenção' : 'Risco de caixa'} />
+        <a className="btn sec" href="/financeiro/resultado">Resultado do mês</a>
         {operaFinanceiro(u) && <a className="btn sec" href="/financeiro/fechamento">Fechamento do dia</a>}
         {configuraFinanceiro(u) && <a className="btn sec" href="/financeiro/cadastros">Cadastros</a>}
       </Topo>

@@ -9,7 +9,7 @@ import { pontualidade } from '@/lib/comercial.js';
 import { configuracao } from '@/lib/dadosComercial.js';
 import { ErroValidacao, texto, opcao } from '@/lib/leitores.js';
 import { lerFechamentoFinanceiro } from '@/lib/leitoresFinanceiro.js';
-import { operaFinanceiro, configuraFinanceiro, ehGerenteFinanceiro, TIPOS_CONTA, NATUREZAS, GRUPOS_CATEGORIA } from '@/lib/financeiro.js';
+import { operaFinanceiro, configuraFinanceiro, ehGerenteFinanceiro, TIPOS_CONTA, NATUREZAS, GRUPOS_CATEGORIA, TIPOS_AJUSTE, GRUPOS_AJUSTE } from '@/lib/financeiro.js';
 
 const falha = (m) => { throw new ErroValidacao(m); };
 function tratar(e) {
@@ -168,4 +168,41 @@ export async function salvarFechamento(_e, fd) {
     revalidatePath('/'); revalidatePath('/financeiro'); revalidatePath('/financeiro/painel');
     return { ok: true, mensagem: editado ? 'Fechamento atualizado.' : 'Fechamento do dia enviado.' };
   } catch (e) { return tratar(e); }
+}
+
+// ---------- Etapa 2: ajustes de competência (DRE) ----------
+export async function salvarAjuste(_e, fd) {
+  try {
+    const u = await exigirUsuario();
+    if (!configuraFinanceiro(u) || u.vendoComo) falha('Só o gerente financeiro e o administrador lançam ajustes.');
+    const mes = String(fd.get('competencia') || '').trim(); // formato YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(mes)) falha('Escolha o mês de competência.');
+    const competencia = `${mes}-01`;
+    const tipo = opcao(fd, 'tipo', 'Tipo', Object.keys(TIPOS_AJUSTE));
+    const grupo = opcao(fd, 'grupo', 'Grupo no resultado', Object.keys(GRUPOS_AJUSTE));
+    const descricao = texto(fd, 'descricao', 'Descrição', 200);
+    const valor = val(fd, 'valor');
+    if (valor <= 0) falha('Informe um valor maior que zero.');
+    const product_id = lerNumero(fd.get('product_id')) || null;
+    await transacao(async (db) => {
+      const r = await db.query('INSERT INTO fin_adjustments (competencia, tipo, grupo, descricao, product_id, valor, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id', [competencia, tipo, grupo, descricao, product_id, valor, u.id]);
+      await auditar(db, { userId: u.id, acao: 'criar', entidade: 'fin_adjustments', entidadeId: r.rows[0].id, depois: { competencia, tipo, grupo, valor } });
+    });
+    revalidatePath('/financeiro/resultado');
+    return { ok: true, mensagem: 'Ajuste lançado.' };
+  } catch (e) { return tratar(e); }
+}
+
+export async function excluirAjuste(fd) {
+  const u = await exigirUsuario();
+  if (!configuraFinanceiro(u) || u.vendoComo) return;
+  const id = lerNumero(fd.get('id'));
+  if (!id) return;
+  await transacao(async (db) => {
+    const a = (await db.query('SELECT * FROM fin_adjustments WHERE id=$1', [id])).rows[0];
+    if (!a) return;
+    await db.query('DELETE FROM fin_adjustments WHERE id=$1', [id]);
+    await auditar(db, { userId: u.id, acao: 'excluir', entidade: 'fin_adjustments', entidadeId: id, antes: a });
+  });
+  revalidatePath('/financeiro/resultado');
 }
