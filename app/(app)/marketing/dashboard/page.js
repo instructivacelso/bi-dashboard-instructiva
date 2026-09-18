@@ -85,15 +85,15 @@ export default async function DashboardMarketing(props) {
         <Kpi rotulo="Investimento" valor={moeda(t.investimento, 0)} meta={m.orcamento ? `orçamento ${moeda(m.orcamento, 0)} · ${pct(dividir(t.investimento, m.orcamento))}` : null}
           cor={m.orcamento ? semaforo(t.investimento, m.orcamento, 'menor') : ''} />
         <Kpi rotulo="Visitas na página" valor={numero(t.visitas)} />
-        <Kpi rotulo="Cadastros" valor={numero(t.cadastros)} cor={semaforo(t.cadastros, m.cadastros)} meta={m.cadastros ? `meta ${numero(m.cadastros)} · ${pct(dividir(t.cadastros, m.cadastros))}` : null} />
+        <Kpi rotulo="Cadastros" valor={numero(t.cadastros)} cor={semaforo(t.cadastros, m.cadastros)} progresso={dividir(t.cadastros, m.cadastros)} meta={m.cadastros ? `meta ${numero(m.cadastros)} · ${pct(dividir(t.cadastros, m.cadastros))}` : null} />
         <Kpi rotulo="CPL" valor={moeda(ind.cpl)} cor={semaforo(ind.cpl, m.cplMax, 'menor')} meta={m.cplMax ? `máximo ${moeda(m.cplMax)}` : null} />
         <Kpi rotulo="Conversão da página" valor={pct(ind.conversaoPagina)} />
-        <Kpi rotulo="Pessoas nos grupos" valor={numero(t.grupos)} cor={semaforo(t.grupos, m.grupos)} meta={m.grupos ? `meta ${numero(m.grupos)}` : null} />
+        <Kpi rotulo="Pessoas nos grupos" valor={numero(t.grupos)} cor={semaforo(t.grupos, m.grupos)} progresso={dividir(t.grupos, m.grupos)} meta={m.grupos ? `meta ${numero(m.grupos)}` : null} />
         <Kpi rotulo="Cadastrados nos grupos" valor={pct(ind.entradaWhatsapp)} meta={ind.naoEntraramWhatsapp != null ? `${numero(ind.naoEntraramWhatsapp)} ainda fora` : null} />
-        <Kpi rotulo="Pessoas únicas na live" valor={numero(t.live)} cor={semaforo(t.live, m.live)} meta={m.live ? `meta ${numero(m.live)}` : null} />
-        <Kpi rotulo="Lista de reserva" valor={numero(t.lista)} cor={semaforo(t.lista, m.lista)} meta={m.lista ? `meta ${numero(m.lista)}` : null} />
-        <Kpi rotulo="Vendas" valor={numero(t.vendas)} cor={semaforo(t.vendas, m.vendas)} meta={m.vendas ? `meta ${numero(m.vendas)}` : null} />
-        <Kpi rotulo="Faturamento" valor={moeda(t.faturamento, 0)} cor={semaforo(t.faturamento, m.faturamento)} meta={m.faturamento ? `meta ${moeda(m.faturamento, 0)}` : null} />
+        <Kpi rotulo="Pessoas únicas na live" valor={numero(t.live)} cor={semaforo(t.live, m.live)} progresso={dividir(t.live, m.live)} meta={m.live ? `meta ${numero(m.live)}` : null} />
+        <Kpi rotulo="Lista de reserva" valor={numero(t.lista)} cor={semaforo(t.lista, m.lista)} progresso={dividir(t.lista, m.lista)} meta={m.lista ? `meta ${numero(m.lista)}` : null} />
+        <Kpi rotulo="Vendas" valor={numero(t.vendas)} cor={semaforo(t.vendas, m.vendas)} progresso={dividir(t.vendas, m.vendas)} meta={m.vendas ? `meta ${numero(m.vendas)}` : null} />
+        <Kpi rotulo="Faturamento" valor={moeda(t.faturamento, 0)} cor={semaforo(t.faturamento, m.faturamento)} progresso={dividir(t.faturamento, m.faturamento)} meta={m.faturamento ? `meta ${moeda(m.faturamento, 0)}` : null} />
         <Kpi rotulo="CAC" valor={moeda(ind.cac)} cor={semaforo(ind.cac, m.cacMax, 'menor')} meta={m.cacMax ? `máximo ${moeda(m.cacMax)}` : null} />
         <Kpi rotulo="ROAS" valor={multiplo(ind.roas)} cor={semaforo(ind.roas, m.roasMin)} meta={m.roasMin ? `mínimo ${multiplo(m.roasMin)}` : null} />
       </section>
@@ -138,9 +138,9 @@ export default async function DashboardMarketing(props) {
       <section className="secao">
         <h2>Evolução diária</h2>
         <div className="grade g3">
-          <Serie titulo="Investimento" pontos={d.serie.map((p) => ({ data: p.data, v: p.investimento }))} formato={(v) => moeda(v, 0)} barras />
+          <Serie titulo="Investimento" pontos={d.serie.map((p) => ({ data: p.data, v: p.investimento }))} formato={(v) => moeda(v, 0)} cor="#ffb627" barras />
           <Serie titulo="Cadastros" pontos={d.serie.map((p) => ({ data: p.data, v: p.cadastros }))} formato={(v) => numero(v)} cor="var(--laranja)" barras />
-          <Serie titulo="CPL" pontos={d.serie.map((p) => ({ data: p.data, v: p.cpl }))} formato={(v) => moeda(v)} cor="var(--grafite)" />
+          <Serie titulo="CPL" pontos={d.serie.map((p) => ({ data: p.data, v: p.cpl }))} formato={(v) => moeda(v)} cor="#ff8a3d" />
         </div>
       </section>
 

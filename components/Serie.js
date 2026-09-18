@@ -25,13 +25,13 @@ export default function Serie({ titulo, pontos, formato, cor = 'var(--grafite)',
       </div>
       {vals.length === 0 ? <p className="suave pequeno">Sem dados no período.</p> : (
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${titulo}: último valor ${ult ? formato(ult.v) : 'sem dados'}`}>
-          <line x1={P.l} x2={W - P.r} y1={H - P.b} y2={H - P.b} stroke="#dfe1e5" />
+          <line x1={P.l} x2={W - P.r} y1={H - P.b} y2={H - P.b} stroke="#25262e" />
           {barras
             ? pontos.map((p, i) => (p.v ? <rect key={i} x={x(i) - bw / 2} y={y(p.v)} width={bw} height={H - P.b - y(p.v)} fill={cor} rx="1.5" /> : null))
             : <path d={d} fill="none" stroke={cor} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />}
           {!barras && pontos.map((p, i) => (p.v !== null && Number.isFinite(p.v) && n <= 31 ? <circle key={i} cx={x(i)} cy={y(p.v)} r="2.4" fill={cor} /> : null))}
-          <text x={P.l} y={H - 6} fontSize="10" fill="#62656c">{fmtData(pontos[0]?.data).slice(0, 5)}</text>
-          <text x={W - P.r} y={H - 6} fontSize="10" fill="#62656c" textAnchor="end">{fmtData(pontos[n - 1]?.data).slice(0, 5)}</text>
+          <text x={P.l} y={H - 6} fontSize="10" fill="#6d6f7a">{fmtData(pontos[0]?.data).slice(0, 5)}</text>
+          <text x={W - P.r} y={H - 6} fontSize="10" fill="#6d6f7a" textAnchor="end">{fmtData(pontos[n - 1]?.data).slice(0, 5)}</text>
         </svg>
       )}
     </figure>

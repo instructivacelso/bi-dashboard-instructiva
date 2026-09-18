@@ -5,6 +5,10 @@ import { acessaSetor, formulariosDo, veDashboardSetor } from '@/lib/perm.js';
 import { tarefasDoDia, pendenciasEquipe } from '@/lib/dados.js';
 import { hoje } from '@/lib/datas.js';
 import { Topo, Vazio, Aviso } from '@/components/Ui.js';
+import EquipeSetor from '@/components/EquipeSetor.js';
+import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList } from 'lucide-react';
+const ICONE_FORM = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList };
+import { ehSuperadmin, gerenteDe } from '@/lib/perm.js';
 
 export default async function Setor(props) {
   const params = await props.params;
@@ -28,6 +32,7 @@ export default async function Setor(props) {
           </p>
           {subs.length > 0 && <ul>{subs.map((s) => <li key={s.id}>{s.nome}</li>)}</ul>}
         </div>
+        {(ehSuperadmin(u) || gerenteDe(u, setor.slug)) && <EquipeSetor setor={setor} u={u} />}
       </>
     );
   }
@@ -55,6 +60,7 @@ export default async function Setor(props) {
           const pendenteMeu = minhasDoForm.find((t) => !t.concluido);
           return (
             <article className="painel atividade" key={s.id}>
+              {(() => { const I = ICONE_FORM[s.formulario] || ClipboardList; return <div className="icone-card"><I aria-hidden="true" /></div>; })()}
               <h3>{s.nome}</h3>
               <p>{s.descricao}</p>
               <div className="pequeno">
@@ -81,6 +87,7 @@ export default async function Setor(props) {
           );
         })}
       </div>
+      {(ehSuperadmin(u) || gerenteDe(u, setor.slug)) && <EquipeSetor setor={setor} u={u} />}
     </>
   );
 }

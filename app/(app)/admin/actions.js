@@ -235,3 +235,55 @@ export async function salvarComercial(_e, fd) {
     return { mensagem: 'Resultado comercial salvo.' };
   }, '/admin/comercial');
 }
+
+// ---------- Equipe cadastrada dentro do setor (gerente do setor ou superadmin) ----------
+async function podeGerirSetor(u, depId) {
+  const { rows } = await (await import('@/lib/db.js')).pool.query('SELECT slug FROM departments WHERE id=$1', [depId]);
+  if (!rows[0]) falha('Setor não encontrado.');
+  if (!ehSuperadmin(u) && !gerenteDe(u, rows[0].slug)) falha('Só o gerente deste setor ou o administrador podem cadastrar a equipe.');
+  return rows[0].slug;
+}
+
+export async function salvarMembroSetor(_e, fd) {
+  return executar(async () => {
+    const u = await exigirUsuario();
+    const depId = num(fd, 'department_id');
+    const slug = await podeGerirSetor(u, depId);
+    const papel = String(fd.get('papel') || 'colaborador');
+    const permitidos = ehSuperadmin(u) ? ['colaborador', 'externo', 'gerente'] : ['colaborador', 'externo'];
+    if (!permitidos.includes(papel)) falha('Perfil não permitido.');
+    const nome = txt(fd, 'nome', 'Nome', true);
+    const email = txt(fd, 'email', 'E-mail', true).toLowerCase();
+    const senha = String(fd.get('senha') || '');
+    if (senha.length < 8) falha('A senha inicial precisa ter pelo menos 8 caracteres.');
+    const subs = fd.getAll('sub').map(Number).filter(Boolean);
+    await transacao(async (db) => {
+      const role = (await db.query('SELECT id FROM roles WHERE chave=$1', [papel])).rows[0].id;
+      const validos = subs.length ? (await db.query('SELECT id FROM subdepartments WHERE department_id=$1 AND id = ANY($2)', [depId, subs])).rows.map((r) => r.id) : [];
+      const temSubs = (await db.query('SELECT COUNT(*)::int n FROM subdepartments WHERE department_id=$1 AND ativo', [depId])).rows[0].n;
+      if (temSubs && !validos.length && papel !== 'gerente') falha('Marque pelo menos uma atividade da pessoa.');
+      const novo = (await db.query('INSERT INTO users (nome,email,cargo,role_id,senha_hash) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+        [nome, email, txt(fd, 'cargo', 'Cargo'), role, await bcrypt.hash(senha, 10)])).rows[0].id;
+      const gerente = papel === 'gerente';
+      if (validos.length) for (const s of validos) await db.query('INSERT INTO user_department_assignments (user_id,department_id,subdepartment_id,gerente) VALUES ($1,$2,$3,$4)', [novo, depId, s, gerente]);
+      else await db.query('INSERT INTO user_department_assignments (user_id,department_id,gerente) VALUES ($1,$2,$3)', [novo, depId, gerente]);
+      await auditar(db, { userId: u.id, acao: 'criar', entidade: 'users', entidadeId: novo, depois: { nome, email, papel, setor: slug, subs: validos } });
+    });
+    return { mensagem: `${nome} foi cadastrado. Envie o e-mail e a senha inicial para a pessoa.` };
+  }, '/setor');
+}
+
+export async function alternarMembro(fd) {
+  const u = await exigirUsuario();
+  const depId = Number(fd.get('department_id'));
+  const alvo = Number(fd.get('user_id'));
+  try { await podeGerirSetor(u, depId); } catch { return; }
+  if (alvo === u.id) return;
+  await transacao(async (db) => {
+    const naoMexe = (await db.query(`SELECT r.chave FROM users x JOIN roles r ON r.id=x.role_id WHERE x.id=$1`, [alvo])).rows[0];
+    if (!naoMexe || (['superadmin', 'diretoria', 'gerente'].includes(naoMexe.chave) && !ehSuperadmin(u))) return;
+    const r = (await db.query('UPDATE users SET ativo = NOT ativo, updated_at=now() WHERE id=$1 RETURNING ativo', [alvo])).rows[0];
+    await auditar(db, { userId: u.id, acao: r.ativo ? 'reativar' : 'desativar', entidade: 'users', entidadeId: alvo });
+  });
+  revalidatePath('/setor');
+}

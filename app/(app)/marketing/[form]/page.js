@@ -85,7 +85,7 @@ export default async function PaginaFormulario(props) {
   return (
     <>
       <Topo titulo={cfg.titulo} descricao={sub?.descricao}>
-        <a className="btn sec" href={`/historico?form=${form}`}>Histórico</a>
+        <a className="btn sec" href="/">Voltar</a>
       </Topo>
 
       {opcoes.length > 1 && (
@@ -120,7 +120,7 @@ export default async function PaginaFormulario(props) {
           )}
         </div>
 
-        <Calculos form={form} v={v} lanc={lanc} dia={dia} />
+        {!['colaborador', 'externo'].includes(u.papel) && <Calculos form={form} v={v} lanc={lanc} dia={dia} />}
       </div>
     </>
   );
