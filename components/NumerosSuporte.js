@@ -1,0 +1,14 @@
+import { numero, pct } from '@/lib/formato.js';
+import { fmtDuracao, CATEGORIAS, SETORES_ENCAMINHAMENTO } from '@/lib/suporte.js';
+import { fmtDataHora } from '@/lib/datas.js';
+
+// Cartões somente de leitura com os números do Suporte (usados nos dois fechamentos)
+const L = ({ itens }) => <div className="leitura">{itens.map(([r, v]) => <div key={r}><span>{r}</span><b>{v}</b></div>)}</div>;
+export function Recebidos({ n }) { return <L itens={[['Novos', numero(n.novos)], ['Reabertos', numero(n.reabertos)], ['Herdados de antes', numero(n.herdados)], ['Total disponível', numero(n.disponivel)]]} />; }
+export function Trabalhados({ n }) { return <L itens={[['Tickets trabalhados', numero(n.trabalhados)], ['Primeiras respostas', numero(n.primeirasRespostas)], ['Atualizações', numero(n.atualizacoes)]]} />; }
+export function Resolvidos({ n }) { return <L itens={[['Resolvidos', numero(n.resolvidos)], ['Encerrados', numero(n.encerrados)], ['Reabertos', numero(n.reabertos)], ['Taxa de resolução', pct(n.taxaResolucao)], ['Taxa de reabertura', pct(n.taxaReabertura)], ['Aluno confirmou', numero(n.confirmaram)]]} />; }
+export function Backlog({ n }) { return <L itens={[['No início do dia', numero(n.backlogInicial)], ['Novos', numero(n.novos)], ['Finalizados', numero(n.resolvidos + n.encerrados)], ['Em aberto agora', numero(n.backlogFinal)], ['Aguardando aluno', numero(n.aguardandoAluno)], ['Aguardando setor', numero(n.aguardandoSetor)], ['Vencidos', numero(n.vencidos)], ['Sem atualização +24h', numero(n.semAtualizacao)]]} />; }
+export function Sla({ n }) { return <L itens={[['1ª resposta (média)', fmtDuracao(n.tempoPrimeiraResposta)], ['Solução (média)', fmtDuracao(n.tempoSolucao)], ['Dentro do SLA', numero(n.noPrazo)], ['Fora do SLA', numero(n.foraPrazo)], ['Cumprimento', pct(n.cumprimentoSla)], ['Mais antigo aberto', n.maisAntigo ? `${n.maisAntigo.protocolo} · ${fmtDataHora(n.maisAntigo.aberto_em)}` : 'nenhum']]} />; }
+export function Categorias({ n }) { return n.porCategoria.length ? <L itens={n.porCategoria.map((c) => [CATEGORIAS[c.categoria] || c.categoria, numero(c.n)])} /> : <p className="suave pequeno">Nenhum ticket trabalhado hoje.</p>; }
+export function Encaminhamentos({ n }) { return <L itens={[['Encaminhados hoje', numero(n.encaminhados)], ...n.encaminhadosPorSetor.map((s) => [SETORES_ENCAMINHAMENTO[s.setor] || s.setor, numero(s.n)]), ['Aguardando retorno', numero(n.aguardandoSetor)], ['Retornos recebidos', numero(n.retornos)], ['Tempo aguardando (média)', fmtDuracao(n.tempoAguardandoSetor)]]} />; }
+export function Qualidade({ n }) { return <L itens={[['Avaliações', numero(n.avaliacoes)], ['Média', n.satisfacaoMedia ? n.satisfacaoMedia.toFixed(1).replace('.', ',') : 'sem dados'], ['Positivas (4-5)', numero(n.avalPositivas)], ['Negativas (1-2)', numero(n.avalNegativas)], ['Satisfação positiva', pct(n.satisfacaoPositiva)], ['Reaberturas', numero(n.reabertos)]]} />; }

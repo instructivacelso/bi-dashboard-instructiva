@@ -71,3 +71,20 @@ tests/                testes das regras
 - Diretor comercial: **Comercial → Diretoria → Equipe**, atividade **Diretor comercial**. Vê e compara as duas cidades.
 - Cursos: cadastre em **Lançamentos → Produtos**. O vendedor só escolhe cursos ativos.
 - Metas e horário-limite: **Gestão → Metas comerciais**.
+
+## Suporte
+- Atendente: **Suporte → Equipe**, atividade **Atendimento**. Registra atendimentos em **Meus atendimentos** e envia o **Fechamento do dia**.
+- Gerente: atividade **Gerente de Suporte**, tipo **Gerente do setor**. Vê a fila toda, reatribui, envia o fechamento gerencial e acompanha o **Dashboard Suporte**.
+- SLA por prioridade e horário-limite: **Dashboard Suporte → SLA**.
+- Protocolo, horários, primeira resposta, solução e linha do tempo são registrados automaticamente. Ninguém exclui atendimento.
+
+## Indicação
+- Gerente: **Indicações → Equipe**, atividade **Gerente de Indicação**, tipo **Gerente do setor**. Cadastra as **Campanhas** (quantas indicações válidas geram benefício, tipo, valor, sorteio), valida e distribui as indicações, envia o fechamento diário.
+- Coleta (CS/CX ou atividade **Coleta de indicações**): registra o convite ao aluno e os contatos indicados. Telefone repetido vira "duplicada" e telefone inválido é marcado automaticamente.
+- Vendedor (atividade **Vendas por indicação**): vê só as indicações dele e avança no funil até a venda. Contato bloqueado não recebe nova tentativa.
+- Benefícios: gerados sozinhos ao atingir a quantidade de indicações **validadas**; aprovação e entrega em **Indicações → Benefícios** (gerente ou Financeiro).
+
+## CS/CX (registro manual até a integração com Hotmart, Panda e Academy)
+- Colaborador: **CS/CX → Equipe**, atividade **Carteira de alunos**. Cuida da própria carteira: adiciona alunos, atualiza a ficha (onboarding, progresso, último acesso) e registra contatos, pesquisas (NPS/CSAT/CES), voz do cliente, cancelamentos e oportunidades.
+- Gerente: atividade **Gerente de CS/CX**, tipo **Gerente do setor**. Vê todas as carteiras, ajusta a **regra do health score** (cada alteração cria uma nova versão e recalcula todos os alunos), envia o fechamento diário e acompanha o **Dashboard CS/CX**.
+- O health score é recalculado a cada atualização de ficha ou novo registro, e guarda a versão da regra usada.

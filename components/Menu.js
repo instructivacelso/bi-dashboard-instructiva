@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation';
 import {
   Home, History, AlertTriangle, Megaphone, Briefcase, Wallet, Users, Headphones, HeartHandshake, Smile, Share2, GraduationCap,
-  Crown, BarChart3, UserCog, Layers, Package, Rocket, DollarSign, ClipboardCheck, ShieldCheck, Tv, Circle, ChevronRight,
+  Crown, BarChart3, UserCog, Layers, Package, Rocket, DollarSign, ClipboardCheck, ShieldCheck, Tv, Circle, ChevronRight, LifeBuoy,
 } from 'lucide-react';
 
 const ICONES = {
@@ -10,13 +10,13 @@ const ICONES = {
   'comercial-jesuitas': Briefcase, 'comercial-toledo': Briefcase, 'comercial-diretoria': Briefcase, financeiro: Wallet, rh: Users, suporte: Headphones,
   'pos-venda': HeartHandshake, cscx: Smile, indicacoes: Share2, academico: GraduationCap, dashboard: BarChart3,
   usuarios: UserCog, setores: Layers, produtos: Package, lancamentos: Rocket, comercial: DollarSign,
-  pendencias: ClipboardCheck, auditoria: ShieldCheck, tv: Tv,
+  pendencias: ClipboardCheck, 'suporte-menu': LifeBuoy, auditoria: ShieldCheck, tv: Tv,
 };
 
 const estaEm = (atual, href) => (href === '/' ? atual === '/' : atual === href || atual.startsWith(href + '/') || atual.startsWith(href + '?'));
 
 function Link({ i, atual, sub }) {
-  const ativo = estaEm(atual, i.href);
+  const ativo = i.href.split('#')[0] === atual;
   const Icone = ICONES[i.icone] || Circle;
   return (
     <a href={i.href} className={`${ativo ? 'ativo' : ''} ${sub ? 'sub' : ''}`} aria-current={ativo ? 'page' : undefined}>
@@ -27,7 +27,11 @@ function Link({ i, atual, sub }) {
 }
 
 export default function Menu({ grupos }) {
-  const atual = usePathname();
+  const caminho = usePathname();
+  // Marca só o item mais específico que corresponde à página atual
+  const hrefs = grupos.flatMap((g) => g.itens.flatMap((i) => (i.filhos ? i.filhos.map((f) => f.href) : [i.href]))).map((h) => h.split('#')[0]);
+  const melhor = hrefs.filter((h) => estaEm(caminho, h)).sort((a, b) => b.length - a.length)[0];
+  const atual = melhor || caminho;
   return (
     <nav className="menu" aria-label="Menu principal">
       {grupos.map((g) => (
@@ -36,7 +40,7 @@ export default function Menu({ grupos }) {
           {g.itens.map((i) => {
             if (!i.filhos) return <Link key={i.href} i={i} atual={atual} />;
             const Icone = ICONES[i.icone] || Circle;
-            const aberto = i.filhos.some((f) => estaEm(atual, f.href)) || (i.base && estaEm(atual, i.base));
+            const aberto = i.filhos.some((f) => f.href.split('#')[0] === atual) || (i.base && estaEm(caminho, i.base));
             return (
               <details key={i.rotulo} className="menu-pai" open={aberto}>
                 <summary className={aberto ? 'dentro' : ''}>

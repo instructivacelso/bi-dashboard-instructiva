@@ -7,8 +7,11 @@ import { vePainelEmpresa, gerenteDe, ehSuperadmin } from '@/lib/perm.js';
 import { Topo, StatusTarefa, Vazio } from '@/components/Ui.js';
 import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check, Briefcase, Users } from 'lucide-react';
 import { veDashboardComercial, cidadesVisiveis } from '@/lib/comercial.js';
+import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
+import { ehDaIndicacao, veTodaIndicacao } from '@/lib/indicacao.js';
+import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 
-const ICONE = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
+const ICONE = { cs_gerente: Users, indicacao_gerente: Users, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
 const hora = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
 
 function CartaoFormulario({ t }) {
@@ -53,10 +56,13 @@ export default async function Inicio() {
     return (
       <>
         <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={funcoes.join(' · ') || u.papel_nome}>
+          {ehDoSuporte(u) && <a className="btn" href="/suporte">Meus atendimentos</a>}
+          {ehDaIndicacao(u) && <a className="btn" href="/indicacoes">Indicações</a>}
+          {ehDoCs(u) && <a className="btn" href="/cs">Minha carteira</a>}
           {veDashboardComercial(u) && <a className="btn sec" href="/comercial/dashboard">{cidadesVisiveis(u).length ? 'Dashboard comercial' : 'Meus resultados'}</a>}
         </Topo>
         <p className="frase-dia">
-          {tarefas.length === 0 ? (veDashboardComercial(u) ? 'Acompanhe os números do time pelo Dashboard comercial.' : 'Seu setor ainda não tem formulário. Ele aparece aqui assim que for publicado.')
+          {tarefas.length === 0 ? (ehDoCs(u) ? 'Acompanhe sua carteira de alunos pelo botão acima.' : ehDaIndicacao(u) ? 'Trabalhe suas indicações pelo botão acima.' : veDashboardComercial(u) ? 'Acompanhe os números do time pelo Dashboard comercial.' : 'Seu setor ainda não tem formulário. Ele aparece aqui assim que for publicado.')
             : pend ? `Você tem ${pend} ${pend === 1 ? 'formulário' : 'formulários'} para preencher hoje, ${fmtData(dia).slice(0, 5)}.`
             : tarefas.every((t) => t.aguardando) ? 'Nada para preencher agora.' : 'Tudo preenchido hoje. Obrigado!'}
         </p>
@@ -110,6 +116,9 @@ export default async function Inicio() {
 
       <div className="grade g4 atalhos">
         <a className="painel atalho" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /><b>Marketing</b><span>{feitos} de {pend.length} formulários de hoje</span></a>
+        {veTodoCs(u) && <a className="painel atalho" href="/cs/dashboard"><Users aria-hidden="true" /><b>CS/CX</b><span>Saúde da base</span></a>}
+        {veTodaIndicacao(u) && <a className="painel atalho" href="/indicacoes/dashboard"><Users aria-hidden="true" /><b>Indicação</b><span>Funil e benefícios</span></a>}
+        {veTodoSuporte(u) && <a className="painel atalho" href="/suporte/dashboard"><Users aria-hidden="true" /><b>Suporte</b><span>Atendimentos e SLA</span></a>}
         {veDashboardComercial(u) && <a className="painel atalho" href="/comercial/dashboard"><Briefcase aria-hidden="true" /><b>Comercial</b><span>Jesuítas e Toledo</span></a>}
         <a className="painel atalho" href="/admin/lancamentos"><Rocket aria-hidden="true" /><b>Lançamentos</b><span>{ativos.n} {ativos.n === 1 ? 'ativo' : 'ativos'}</span></a>
         {ehSuperadmin(u) && <a className="painel atalho" href="/admin/usuarios"><UserPlus aria-hidden="true" /><b>Pessoas</b><span>{equipe.n} com formulário</span></a>}

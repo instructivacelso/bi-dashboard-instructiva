@@ -6,11 +6,14 @@ import { LogOut } from 'lucide-react';
 import BotaoTema from '@/components/BotaoTema.js';
 import { rotaFormulario } from '@/lib/formularios.js';
 import { veDashboardComercial, cidadesVisiveis, ehDiretorComercial, cidadeDoVendedor } from '@/lib/comercial.js';
+import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
+import { ehDaIndicacao, veTodaIndicacao, registraIndicacao } from '@/lib/indicacao.js';
+import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 import { sair, sairVerComo } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
-const CURTOS = { trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial' };
+const CURTOS = { cs_gerente: 'Fechamento do gerente', indicacao_gerente: 'Fechamento do gerente', suporte_fechamento: 'Fechamento do dia', suporte_gerente: 'Fechamento do gerente', trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente', vendedor: 'Vendedores', gerente_comercial: 'Gerente comercial' };
 
 async function montarMenu(u) {
   // Colaborador e prestador externo: só os próprios formulários e histórico
@@ -18,6 +21,9 @@ async function montarMenu(u) {
     const itens = [{ href: '/', rotulo: 'Meus formulários', icone: 'inicio' }];
     if (cidadeDoVendedor(u)) itens.push({ href: '/comercial/dashboard', rotulo: 'Meus resultados', icone: 'dashboard' });
     else if (cidadesVisiveis(u).length) itens.push({ href: '/comercial/dashboard', rotulo: 'Dashboard comercial', icone: 'dashboard' });
+    if (ehDoSuporte(u)) itens.push({ href: '/suporte', rotulo: 'Meus atendimentos', icone: 'suporte' });
+    if (ehDoCs(u)) itens.push({ href: '/cs', rotulo: 'Minha carteira', icone: 'cscx' });
+    if (ehDaIndicacao(u)) itens.push({ href: '/indicacoes', rotulo: registraIndicacao(u) ? 'Indicações' : 'Minhas indicações', icone: 'indicacoes' });
     if (u.lotacoes.some((l) => l.setor === 'marketing')) itens.push({ href: '/historico', rotulo: 'Meus envios', icone: 'historico' });
     return [{ itens }];
   }
@@ -29,10 +35,12 @@ async function montarMenu(u) {
   const arvore = [];
   for (const s of meus) {
     const [pai, filho] = s.nome.split(' — ');
-    const atividades = subs.filter((x) => x.slug === s.slug).map((x) => ({
+    const atividades = (s.slug === 'suporte' && ehDoSuporte(u) ? [{ href: '/suporte', rotulo: 'Atendimentos' }] : [])
+      .concat(s.slug === 'indicacoes' && ehDaIndicacao(u) ? [{ href: '/indicacoes', rotulo: 'Indicações' }] : [])
+      .concat(s.slug === 'cscx' && ehDoCs(u) ? [{ href: '/cs', rotulo: 'Carteira de alunos' }] : []).concat(subs.filter((x) => x.slug === s.slug).map((x) => ({
       href: x.formulario && x.formulario_ativo && x.modulo_ativo ? rotaFormulario(x.formulario) : `/setor/${s.slug}#${x.sub}`,
       rotulo: CURTOS[x.formulario] || x.nome,
-    }));
+    })));
     if (filho) {
       let g = arvore.find((x) => x.rotulo === pai);
       if (!g) { g = { rotulo: pai, icone: s.slug, filhos: [] }; arvore.push(g); }
@@ -50,6 +58,9 @@ async function montarMenu(u) {
   const extra = [];
   if (veDashboardSetor(u, 'marketing')) extra.push({ href: '/marketing/dashboard', rotulo: 'Dashboard Marketing', icone: 'dashboard' });
   if (veDashboardComercial(u)) extra.push({ href: '/comercial/dashboard', rotulo: 'Dashboard Comercial', icone: 'comercial' });
+  if (veTodoCs(u)) extra.push({ href: '/cs/dashboard', rotulo: 'Dashboard CS/CX', icone: 'cscx' });
+  if (veTodaIndicacao(u)) extra.push({ href: '/indicacoes/dashboard', rotulo: 'Dashboard Indicação', icone: 'indicacoes' });
+  if (veTodoSuporte(u)) extra.push({ href: '/suporte/dashboard', rotulo: 'Dashboard Suporte', icone: 'suporte' });
   if (ehDiretorComercial(u)) extra.push({ href: '/comercial/metas', rotulo: 'Metas comerciais', icone: 'pendencias' });
   if (vePainelEmpresa(u)) extra.push({ href: '/admin/tv', rotulo: 'Painel da TV', icone: 'tv' });
   if (ehSuperadmin(u) || gerenteDe(u, 'marketing')) extra.push({ href: '/admin/lancamentos', rotulo: 'Lançamentos', icone: 'lancamentos' });

@@ -19,15 +19,15 @@ export default function Condicionais() {
     };
     const aplicar = () => {
       f.querySelectorAll('[data-se]').forEach((bloco) => {
-        const regra = bloco.dataset.se;
-        let mostrar;
-        if (regra.includes('>')) {
-          const [nome, lim] = regra.split('>');
-          mostrar = (Number(String(valorDe(nome)).replace(',', '.')) || 0) > Number(lim);
-        } else {
+        const paiEscondido = bloco.parentElement?.closest('[data-se]')?.hidden;
+        const mostrar = !paiEscondido && bloco.dataset.se.split(';').some((regra) => {
+          if (regra.includes('>')) {
+            const [nome, lim] = regra.split('>');
+            return (Number(String(valorDe(nome)).replace(',', '.')) || 0) > Number(lim);
+          }
           const [nome, vals] = regra.split(':');
-          mostrar = vals.split('|').includes(valorDe(nome));
-        }
+          return vals.split('|').includes(valorDe(nome));
+        });
         bloco.hidden = !mostrar;
         bloco.querySelectorAll('input, select, textarea').forEach((el) => {
           if (el.dataset.obrig === undefined) el.dataset.obrig = el.required ? '1' : '0';

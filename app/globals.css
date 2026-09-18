@@ -122,7 +122,7 @@ p { margin: 0; }
 /* ---------- Blocos ---------- */
 .painel { background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--linha); border-radius: var(--raio); padding: 22px; box-shadow: var(--sombra); }
 .painel + .painel { margin-top: 18px; }
-.grade > .painel + .painel, .tv-kpis > .painel + .painel { margin-top: 0; }
+.grade > .painel + .painel, .tv-kpis > .painel + .painel, .tv-setores-grade > .painel + .painel, .tv-meio > .painel + .painel { margin-top: 0; }
 .painel-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .painel-cab p { color: var(--suave); font-size: 0.88rem; }
 .grade { display: grid; gap: 16px; }
@@ -425,3 +425,30 @@ form[data-ultima="nao"] .rodape-fixo button[type=submit] { display: none; }
 .leitura b { font-size: 1.05rem; }
 [data-se][hidden] { display: none !important; }
 [data-se] { display: flex; flex-direction: column; gap: 14px; border: 1px solid rgba(251,191,36,.35); background: rgba(251,191,36,.06); padding: 14px; border-radius: 14px; }
+.linha-tempo { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--linha-2); display: flex; flex-direction: column; gap: 14px; }
+.linha-tempo li { position: relative; font-size: 0.88rem; }
+.linha-tempo li::before { content: ''; position: absolute; left: -22px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--grad); }
+
+/* ---------- Painel da TV (geral) ---------- */
+.tv { gap: 16px; padding: 22px 30px; height: 100vh; overflow: hidden; }
+.tv-setores-grade { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.tv-setor-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--laranja); }
+.tv-setor-card.verde { border-top-color: var(--verde); } .tv-setor-card.amarelo { border-top-color: var(--amarelo); } .tv-setor-card.vermelho { border-top-color: var(--vermelho); }
+.tv-setor-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tv-setor-cab h2 { font-size: 1.25rem; }
+.tv-numeros { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.tv-numeros span { display: block; font-size: 0.82rem; color: var(--suave); font-weight: 600; }
+.tv-numeros b { display: block; font-size: clamp(1.2rem, 1.55vw, 2rem); font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.15; }
+.tv-numeros small { display: block; font-size: 0.78rem; color: var(--suave); }
+.tv-rodape-card { font-size: 0.82rem; color: var(--suave); border-top: 1px solid var(--linha); padding-top: 8px; margin-top: auto; }
+.tv-meio { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; flex: 1; min-height: 0; }
+.tv-meio .painel { overflow: hidden; }
+.tv-meio .funil-etapa, .tv-meio .funil-passagem { grid-template-columns: 150px 1fr 0; }
+.tv-meio .funil-barra { height: 30px; }
+.tv-pos { font-size: 1.2rem; font-weight: 800; color: var(--laranja-2); width: 40px; }
+.tv-alertas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 1rem; }
+.tv-alertas li { display: flex; gap: 10px; align-items: center; }
+.tv-fechamentos { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 1rem; }
+.tv-fechamentos .selo { font-size: 0.9rem; padding: 6px 12px; }
+.tv-fechamentos .tv-rodape { margin-left: auto; }
+@media (max-width: 1400px) { .tv { height: auto; overflow: visible; } .tv-setores-grade { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } .tv-meio { grid-template-columns: 1fr; } }

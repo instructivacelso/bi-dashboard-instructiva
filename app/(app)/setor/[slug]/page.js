@@ -8,8 +8,11 @@ import { Topo, Vazio, Aviso, StatusTarefa } from '@/components/Ui.js';
 import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Users, BarChart3, Briefcase } from 'lucide-react';
 import { rotaFormulario, FORMULARIOS_COMERCIAL } from '@/lib/formularios.js';
 import { cidadesVisiveis } from '@/lib/comercial.js';
+import { ehDoSuporte, veTodoSuporte } from '@/lib/suporte.js';
+import { ehDaIndicacao, veTodaIndicacao } from '@/lib/indicacao.js';
+import { ehDoCs, veTodoCs } from '@/lib/cscx.js';
 
-const ICONE_FORM = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
+const ICONE_FORM = { cs_gerente: Users, indicacao_gerente: Users, suporte_fechamento: ClipboardList, suporte_gerente: Users, trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
 
 // Página do setor: só os formulários. Equipe e dashboard ficam em botões no topo.
 export default async function Setor(props) {
@@ -24,6 +27,12 @@ export default async function Setor(props) {
     <>
       {gestor && <a className="btn sec" href={`/setor/${setor.slug}/equipe`}><Users aria-hidden="true" /> Equipe</a>}
       {veDashboardSetor(u, setor.slug) && setor.slug === 'marketing' && <a className="btn" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /> Dashboard</a>}
+      {setor.slug === 'cscx' && ehDoCs(u) && <a className="btn sec" href="/cs">Carteira</a>}
+      {setor.slug === 'cscx' && veTodoCs(u) && <a className="btn" href="/cs/dashboard"><BarChart3 aria-hidden="true" /> Dashboard</a>}
+      {setor.slug === 'indicacoes' && ehDaIndicacao(u) && <a className="btn sec" href="/indicacoes">Indicações</a>}
+      {setor.slug === 'indicacoes' && veTodaIndicacao(u) && <a className="btn" href="/indicacoes/dashboard"><BarChart3 aria-hidden="true" /> Dashboard</a>}
+      {setor.slug === 'suporte' && ehDoSuporte(u) && <a className="btn sec" href="/suporte">Atendimentos</a>}
+      {setor.slug === 'suporte' && veTodoSuporte(u) && <a className="btn" href="/suporte/dashboard"><BarChart3 aria-hidden="true" /> Dashboard</a>}
       {setor.slug.startsWith('comercial') && cidadesVisiveis(u).length > 0 && <a className="btn" href="/comercial/dashboard"><BarChart3 aria-hidden="true" /> Dashboard comercial</a>}
     </>
   );
