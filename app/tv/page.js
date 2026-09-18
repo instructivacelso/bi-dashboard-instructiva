@@ -39,7 +39,7 @@ export default async function PainelTV(props) {
     <main className="tv tema-escuro">
       <meta httpEquiv="refresh" content="60" />
       <header className="tv-topo">
-        <div className="marca"><img src="/logo.jpeg" alt="" /><div><strong>Instructiva</strong><span>Painel geral · últimos 30 dias · {ativos.length} lançamentos ativos</span></div></div>
+        <div className="marca"><img src="/logo.jpeg" alt="" /><div><strong>Escola Instructiva</strong><span>Painel geral · últimos 30 dias · {ativos.length} lançamentos ativos</span></div></div>
         <Relogio />
       </header>
 

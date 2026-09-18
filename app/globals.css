@@ -122,6 +122,7 @@ p { margin: 0; }
 /* ---------- Blocos ---------- */
 .painel { background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--linha); border-radius: var(--raio); padding: 22px; box-shadow: var(--sombra); }
 .painel + .painel { margin-top: 18px; }
+.grade > .painel + .painel, .tv-kpis > .painel + .painel { margin-top: 0; }
 .painel-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .painel-cab p { color: var(--suave); font-size: 0.88rem; }
 .grade { display: grid; gap: 16px; }

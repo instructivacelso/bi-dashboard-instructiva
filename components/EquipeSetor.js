@@ -16,7 +16,7 @@ export default async function EquipeSetor({ setor, u }) {
   ]);
   const admin = ehSuperadmin(u);
   return (
-    <section className="secao grade g2" style={{ alignItems: 'start' }}>
+    <section className="grade g2" style={{ alignItems: "start" }}>
       <div className="painel">
         <div className="painel-cab"><h2>Equipe do setor</h2><span className="suave pequeno">{membros.filter((m) => m.ativo).length} ativos</span></div>
         {membros.length === 0 ? <p className="suave">Ninguém cadastrado ainda.</p> : (

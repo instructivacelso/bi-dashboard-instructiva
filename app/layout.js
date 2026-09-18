@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'BI Dashboard Instructiva',
+  title: 'Escola Instructiva',
   description: 'Central de gestão da Escola Instructiva',
 };
 export const viewport = { width: 'device-width', initialScale: 1 };

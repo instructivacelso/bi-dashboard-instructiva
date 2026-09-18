@@ -16,7 +16,7 @@ export default async function Login() {
           <p>Preencha seu fechamento do dia em menos de dois minutos e acompanhe metas, pendências e gargalos.</p>
           </div>
         <div className="orbita" aria-hidden="true" />
-        <p className="pequeno">BI Dashboard Instructiva</p>
+        <p className="pequeno">Escola Instructiva</p>
       </section>
       <section className="login-form">
         <FormEstado action={entrar} botao="Entrar" botaoEnviando="Entrando…">

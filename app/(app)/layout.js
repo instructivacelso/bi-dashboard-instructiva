@@ -21,7 +21,7 @@ async function montarMenu(u) {
       { href: '/historico', rotulo: 'Histórico', icone: 'historico' },
       { href: '/acoes', rotulo: 'Ações e problemas', icone: 'acoes' },
     ] },
-    { titulo: 'Setores', itens: meus.map((s) => ({ href: `/setor/${s.slug}`, rotulo: s.nome, icone: s.slug, etiqueta: s.modulo_ativo ? null : 'em breve' })) },
+    { titulo: 'Setores', itens: meus.map((s) => ({ href: `/setor/${s.slug}`, rotulo: s.nome, icone: s.slug })) },
   ];
   if (veDashboardSetor(u, 'marketing')) {
     grupos.push({ titulo: 'Dashboards', itens: [{ href: '/marketing/dashboard', rotulo: 'Marketing', icone: 'dashboard' }] });
@@ -45,14 +45,14 @@ function Lateral({ u, grupos }) {
     <aside className="lateral">
       <a className="marca" href="/">
         <img src="/logo.jpeg" alt="" />
-        <div><strong>Instructiva</strong><span>BI Dashboard</span></div>
+        <div><strong>Escola Instructiva</strong><span>Painel de gestão</span></div>
       </a>
       <Menu grupos={grupos} />
       <div className="usuario-box">
         <span className="mini-av" aria-hidden="true">{u.nome.split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase()}</span>
         <div>
           <strong>{u.nome}</strong>
-          <small>{funcao.length ? [...new Set(funcao)].join(', ') : u.papel_nome}</small>
+          <small>{funcao.length ? [...new Set(funcao)].join(', ') : 'Acesso completo'}</small>
         </div>
         <BotaoTema />
         <form action={sair}><button type="submit" aria-label="Sair" title="Sair"><LogOut size={16} /></button></form>
@@ -68,7 +68,7 @@ export default async function AppLayout({ children }) {
     <div className="app">
       <Lateral u={u} grupos={grupos} />
       <details className="barra-movel">
-        <summary><strong>Instructiva</strong><span>Menu</span></summary>
+        <summary><strong>Escola Instructiva</strong><span>Menu</span></summary>
         <Lateral u={u} grupos={grupos} />
       </details>
       <main className="conteudo">{children}</main>

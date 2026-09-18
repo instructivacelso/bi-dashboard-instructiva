@@ -65,7 +65,7 @@ async function main() {
         const role = (await client.query(`SELECT id FROM roles WHERE chave='superadmin'`)).rows[0].id;
         await client.query(
           `INSERT INTO users (nome, email, senha_hash, role_id, cargo) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email) DO NOTHING`,
-          ['Superadministrador', email, await bcrypt.hash(senha, 10), role, 'Administração do sistema']
+          ['Escola Instructiva', email, await bcrypt.hash(senha, 10), role, 'Administração do sistema']
         );
         console.log(`[migrate] superadministrador criado: ${email}`);
       }

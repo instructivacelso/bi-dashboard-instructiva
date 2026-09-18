@@ -1,93 +1,67 @@
 import { notFound } from 'next/navigation';
 import { exigirUsuario } from '@/lib/auth.js';
 import { q, q1 } from '@/lib/db.js';
-import { acessaSetor, formulariosDo, veDashboardSetor } from '@/lib/perm.js';
-import { tarefasDoDia, pendenciasEquipe } from '@/lib/dados.js';
+import { acessaSetor, formulariosDo, veDashboardSetor, ehSuperadmin, gerenteDe } from '@/lib/perm.js';
+import { tarefasDoDia } from '@/lib/dados.js';
 import { hoje } from '@/lib/datas.js';
-import { Topo, Vazio, Aviso } from '@/components/Ui.js';
-import EquipeSetor from '@/components/EquipeSetor.js';
-import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList } from 'lucide-react';
-const ICONE_FORM = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList };
-import { ehSuperadmin, gerenteDe } from '@/lib/perm.js';
+import { Topo, Vazio, Aviso, StatusTarefa } from '@/components/Ui.js';
+import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Users, BarChart3 } from 'lucide-react';
 
+const ICONE_FORM = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList };
+
+// Página do setor: só os formulários. Equipe e dashboard ficam em botões no topo.
 export default async function Setor(props) {
   const params = await props.params;
   const u = await exigirUsuario();
   const setor = await q1('SELECT * FROM departments WHERE slug=$1 AND ativo', [params.slug]);
   if (!setor) notFound();
-  if (!acessaSetor(u, setor.slug)) {
-    return <><Topo titulo={setor.nome} /><Aviso tipo="erro">Você não tem acesso a este setor.</Aviso></>;
-  }
-  const subs = await q('SELECT * FROM subdepartments WHERE department_id=$1 AND ativo ORDER BY ordem', [setor.id]);
+  if (!acessaSetor(u, setor.slug)) return <><Topo titulo={setor.nome} /><Aviso tipo="erro">Você não tem acesso a este setor.</Aviso></>;
+
+  const gestor = ehSuperadmin(u) || gerenteDe(u, setor.slug);
+  const botoes = (
+    <>
+      {gestor && <a className="btn sec" href={`/setor/${setor.slug}/equipe`}><Users aria-hidden="true" /> Equipe</a>}
+      {veDashboardSetor(u, setor.slug) && setor.slug === 'marketing' && <a className="btn" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /> Dashboard</a>}
+    </>
+  );
 
   if (!setor.modulo_ativo) {
     return (
       <>
-        <Topo titulo={setor.nome} descricao={setor.descricao} />
-        <div className="painel">
-          <h2>Módulo em configuração</h2>
-          <p className="suave" style={{ marginTop: 8, maxWidth: '70ch' }}>
-            A estrutura deste setor já está pronta para receber subsetores, formulários, indicadores, metas, histórico e dashboard.
-            Os formulários serão liberados depois que as métricas forem definidas e aprovadas pela Escola Instructiva.
-          </p>
-          {subs.length > 0 && <ul>{subs.map((s) => <li key={s.id}>{s.nome}</li>)}</ul>}
-        </div>
-        {(ehSuperadmin(u) || gerenteDe(u, setor.slug)) && <EquipeSetor setor={setor} u={u} />}
+        <Topo titulo={setor.nome}>{botoes}</Topo>
+        <Vazio>O formulário deste setor ainda vai ser publicado.</Vazio>
       </>
     );
   }
 
   const dia = hoje();
+  const subs = await q('SELECT * FROM subdepartments WHERE department_id=$1 AND ativo AND formulario IS NOT NULL AND formulario_ativo ORDER BY ordem', [setor.id]);
   const meus = formulariosDo(u);
-  const minhas = await tarefasDoDia(u, dia);
-  const gestor = veDashboardSetor(u, setor.slug);
-  const equipe = gestor ? await pendenciasEquipe(dia, setor.slug) : [];
-  // Colaborador vê só os cards das próprias atividades; gestor e diretoria veem todos
-  const visiveis = gestor ? subs : subs.filter((s) => meus.includes(s.formulario));
+  const tarefas = await tarefasDoDia(u, dia);
+  const visiveis = veDashboardSetor(u, setor.slug) ? subs : subs.filter((s) => meus.includes(s.formulario));
 
   return (
     <>
-      <Topo titulo={setor.nome} descricao={setor.descricao}>
-        {gestor && <a className="btn" href="/marketing/dashboard">Abrir dashboard</a>}
-      </Topo>
-      {visiveis.length === 0 && <Vazio>Nenhuma atividade atribuída a você neste setor.</Vazio>}
-      <div className="grade g3">
-        {visiveis.map((s) => {
-          const minhasDoForm = minhas.filter((t) => t.form === s.formulario);
-          const daEquipe = equipe.filter((t) => t.form === s.formulario);
-          const feitas = daEquipe.filter((t) => t.concluido).length;
-          const preenche = meus.includes(s.formulario);
-          const pendenteMeu = minhasDoForm.find((t) => !t.concluido);
-          return (
-            <article className="painel atividade" key={s.id}>
-              {(() => { const I = ICONE_FORM[s.formulario] || ClipboardList; return <div className="icone-card"><I aria-hidden="true" /></div>; })()}
-              <h3>{s.nome}</h3>
-              <p>{s.descricao}</p>
-              <div className="pequeno">
-                <strong>Formulário:</strong> {s.formulario_ativo ? 'ativo' : 'desativado pelo administrador'}
-              </div>
-              <div className="acoes-linha">
-                {preenche && (minhasDoForm.length === 0
-                  ? <span className="selo neutro">Nada para hoje</span>
-                  : pendenteMeu
-                    ? <span className="selo laranja">Pendente ({minhasDoForm.filter((t) => !t.concluido).length})</span>
-                    : <span className="selo verde">Concluído hoje</span>)}
-                {gestor && daEquipe.length > 0 && (
-                  <span className={`selo ${feitas === daEquipe.length ? 'verde' : 'amarelo'}`}>Equipe: {feitas} de {daEquipe.length}</span>
-                )}
-                {gestor && daEquipe.length === 0 && !preenche && <span className="selo neutro">Sem envios previstos hoje</span>}
-              </div>
-              <div className="rodape">
-                {preenche && s.formulario_ativo && minhasDoForm.length > 0 && (
-                  <a className="btn peq" href={`/marketing/${s.formulario}${pendenteMeu ? `?lancamento=${pendenteMeu.lancamento.id}` : ''}`}>Preencher formulário</a>
-                )}
-                <a className="btn sec peq" href={`/historico?form=${s.formulario}`}>{gestor ? 'Histórico da equipe' : 'Meu histórico'}</a>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      {(ehSuperadmin(u) || gerenteDe(u, setor.slug)) && <EquipeSetor setor={setor} u={u} />}
+      <Topo titulo={setor.nome}>{botoes}</Topo>
+      {visiveis.length === 0 ? <Vazio>Nenhum formulário atribuído a você neste setor.</Vazio> : (
+        <div className="grade g3">
+          {visiveis.map((s) => {
+            const minhas = tarefas.filter((t) => t.form === s.formulario);
+            const pend = minhas.find((t) => !t.concluido);
+            const I = ICONE_FORM[s.formulario] || ClipboardList;
+            return (
+              <a key={s.id} href={`/marketing/${s.formulario}${pend ? `?lancamento=${pend.lancamento.id}` : ''}`} className="painel atividade" style={{ color: 'inherit', textDecoration: 'none' }}>
+                <div className="painel-cab" style={{ marginBottom: 0 }}>
+                  <div className="icone-card"><I aria-hidden="true" /></div>
+                  {minhas.length > 0 && <StatusTarefa concluido={!pend} />}
+                </div>
+                <h3>{s.nome}</h3>
+                <div className="rodape"><span className="btn peq">{pend ? 'Preencher' : 'Abrir formulário'}</span></div>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
