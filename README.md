@@ -61,9 +61,16 @@ tests/                testes das regras
 ```
 
 ## Próximas etapas
-- Módulo Financeiro (plano em aprovação), RH, Pós-venda e Acadêmico.
+- Financeiro — Etapa 2 (custo por produto, CAC, margem, DRE, ponto de equilíbrio) e Etapa 3 (dívidas, investidores, patrimônio, metas de redução).
+- RH, Pós-venda e Acadêmico.
 - Envio de e-mail para recuperação de senha (hoje o admin gera o link).
 - O sistema funciona 100% por formulário: não há integração com plataformas de venda, WhatsApp ou automações.
+
+## Financeiro (Etapa 1 — caixa do dia a dia)
+- **Antes do primeiro fechamento**, o gerente financeiro ou o administrador abre **Financeiro → Cadastros** e cadastra: contas bancárias e caixas (com saldo inicial), categorias (plano de contas), fornecedores, centros de custo e os compromissos fixos mensais (aluguel, folha etc.). Ali também ficam os parâmetros: horário-limite do fechamento e as probabilidades de recebimento usadas na projeção.
+- **Equipe:** em **Financeiro → Equipe**, cadastre quem lança o dia a dia com a atividade **Operação financeira** (ela passa a ver o *Fechamento financeiro do dia* na tela inicial) e o responsável com a atividade **Gerente financeiro**, tipo *Gerente do setor* (só ele pode marcar o dia como **Fechado** e vê o painel e os cadastros).
+- **Fechamento do dia:** saldo de cada conta (o saldo inicial já vem do dia anterior e o final é calculado), entradas recebidas (com taxa; o líquido é calculado), contas a pagar e a receber por faixa, inadimplência e conciliação. **As vendas do dia vêm prontas** do Comercial e da Indicação — não se digita de novo.
+- **Painel (gerente/diretoria):** saldo disponível, resultado do dia, a pagar hoje, vendas, contas a receber e a pagar por faixa, inadimplência e a **projeção de caixa** em cenários, com aviso de risco de saldo negativo, cobertura de 30 dias e capital de giro necessário.
 
 ## Time de Indicação (colaborador)
 - Cadastre a pessoa em **Indicações → Equipe**, atividade **Colaborador de indicação**. Ela passa a ver o **Formulário do dia** (10 campos), **Meu painel** e **Meu pipeline** (Kanban de 13 estágios) — somente com as próprias indicações.
