@@ -1,0 +1,40 @@
+name: Aplicar atualização (zip)
+
+# Ao enviar um arquivo .zip para a raiz do repositório, esta automação
+# descompacta, substitui os arquivos do projeto, apaga o zip e salva.
+on:
+  push:
+    paths:
+      - '*.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descompactar e aplicar
+        run: |
+          set -e
+          ZIP=$(ls *.zip | head -n 1)
+          echo "Aplicando $ZIP"
+          rm -rf /tmp/novo && mkdir -p /tmp/novo
+          unzip -q -o "$ZIP" -d /tmp/novo
+          rm -rf /tmp/novo/__MACOSX
+          # Se o zip tiver uma única pasta na raiz, usa o conteúdo dela
+          SRC=/tmp/novo
+          if [ "$(ls -A /tmp/novo | wc -l)" = "1" ] && [ -d "/tmp/novo/$(ls -A /tmp/novo)" ]; then SRC="/tmp/novo/$(ls -A /tmp/novo)"; fi
+          if [ ! -f "$SRC/package.json" ]; then echo "O zip não parece ser o projeto (sem package.json). Nada foi alterado."; exit 1; fi
+          rsync -a --delete --exclude '.git' --exclude '.github' --exclude 'node_modules' --exclude '.next' "$SRC"/ ./
+          rm -f *.zip
+
+      - name: Salvar no repositório
+        run: |
+          git config user.name "Atualização automática"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Atualização aplicada a partir do zip" || echo "Nada para mudar"
+          git push
