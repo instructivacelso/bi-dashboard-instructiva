@@ -11,7 +11,7 @@ export default function Progresso() {
     const contar = () => {
       const grupos = new Map();
       f.querySelectorAll('[required]').forEach((el) => {
-        if (el.disabled || el.type === 'hidden') return;
+        if (el.disabled || el.type === 'hidden' || el.closest('[hidden]')) return;
         const nome = el.name;
         if (!nome) return;
         if (el.type === 'radio') {
@@ -19,12 +19,17 @@ export default function Progresso() {
           grupos.set(nome, !!marcado);
         } else grupos.set(nome, String(el.value).trim() !== '');
       });
+      f.querySelectorAll('[data-grupo-obrigatorio]').forEach((g, k) => {
+        if (g.closest('[hidden]')) return;
+        grupos.set(`__grupo${k}`, !!g.querySelector('input[type=checkbox]:checked'));
+      });
       setSt({ feitos: [...grupos.values()].filter(Boolean).length, total: grupos.size });
     };
     contar();
     f.addEventListener('input', contar);
     f.addEventListener('change', contar);
-    return () => { f.removeEventListener('input', contar); f.removeEventListener('change', contar); };
+    f.addEventListener('condicionais', contar);
+    return () => { f.removeEventListener('input', contar); f.removeEventListener('change', contar); f.removeEventListener('condicionais', contar); };
   }, []);
   const faltam = st.total - st.feitos;
   const pctv = st.total ? (st.feitos / st.total) * 100 : 0;

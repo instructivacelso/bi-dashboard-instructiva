@@ -60,8 +60,8 @@ async function main() {
       if (!dep) continue;
       for (const x of lista) {
         await client.query(
-          `INSERT INTO subdepartments (department_id, slug, nome, ordem) VALUES ($1,$2,$3,$4) ON CONFLICT (department_id, slug) DO NOTHING`,
-          [dep.id, x.slug, x.nome, x.ordem]
+          `INSERT INTO subdepartments (department_id, slug, nome, ordem, formulario) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (department_id, slug) DO NOTHING`,
+          [dep.id, x.slug, x.nome, x.ordem, x.formulario || null]
         );
       }
     }

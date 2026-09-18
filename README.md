@@ -64,3 +64,10 @@ tests/                testes das regras
 - Formulários de Comercial, Financeiro, RH, Suporte, CS/CX, Indicações e Acadêmico.
 - Webhooks Hotmart/TMB/Greenn e n8n alimentando `commercial_launch_results` e `onboarding_events`.
 - Envio de e-mail para recuperação de senha (hoje o admin gera o link).
+
+## Comercial (Jesuítas e Toledo)
+- Vendedor: cadastre a pessoa em **Comercial → Jesuítas/Toledo → Equipe**, atividade **Vendedores**. A cidade do formulário vem desse cadastro e o vendedor não consegue alterar.
+- Gerente: mesma tela, atividade **Gerente comercial**, tipo de acesso **Gerente do setor** (só o administrador marca). Vê somente a própria cidade.
+- Diretor comercial: **Comercial → Diretoria → Equipe**, atividade **Diretor comercial**. Vê e compara as duas cidades.
+- Cursos: cadastre em **Lançamentos → Produtos**. O vendedor só escolhe cursos ativos.
+- Metas e horário-limite: **Gestão → Metas comerciais**.

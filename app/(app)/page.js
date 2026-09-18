@@ -5,9 +5,10 @@ import { hoje, fmtData } from '@/lib/datas.js';
 import { DESCRICOES } from '@/lib/formularios.js';
 import { vePainelEmpresa, gerenteDe, ehSuperadmin } from '@/lib/perm.js';
 import { Topo, StatusTarefa, Vazio } from '@/components/Ui.js';
-import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check } from 'lucide-react';
+import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check, Briefcase, Users } from 'lucide-react';
+import { veDashboardComercial, cidadesVisiveis } from '@/lib/comercial.js';
 
-const ICONE = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList };
+const ICONE = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList, vendedor: Briefcase, gerente_comercial: Users };
 const hora = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
 
 function CartaoFormulario({ t }) {
@@ -22,11 +23,11 @@ function CartaoFormulario({ t }) {
     );
   }
   return (
-    <a href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`} className={`painel cartao-form ${t.concluido ? 'feito' : ''}`}>
+    <a href={t.href || `/marketing/${t.form}?lancamento=${t.lancamento.id}`} className={`painel cartao-form ${t.concluido ? 'feito' : ''}`}>
       <div className="cartao-topo"><span className="icone-card"><I aria-hidden="true" /></span><StatusTarefa concluido={t.concluido} /></div>
       <h2>{t.titulo}</h2>
-      <p className="cartao-lanc">{t.lancamento.nome}</p>
-      <p className="suave pequeno">{DESCRICOES[t.form]}</p>
+      {t.lancamento && <p className="cartao-lanc">{t.lancamento.nome}</p>}
+      <p className="suave pequeno">{t.descricao || DESCRICOES[t.form]}</p>
       <div className="cartao-rodape">
         <span className="suave pequeno">{t.ultimoEnvio ? `Enviado às ${hora(t.ultimoEnvio)}` : 'Ainda não enviado hoje'}{t.detalhe ? ` · ${t.detalhe}` : ''}</span>
         <span className={`btn ${t.concluido ? 'sec' : ''}`}>{t.concluido ? 'Revisar' : 'Preencher agora'}</span>
@@ -51,9 +52,11 @@ export default async function Inicio() {
     const acoes = prob.acoes.filter((x) => x.responsavel_id === u.id);
     return (
       <>
-        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={funcoes.join(' · ') || u.papel_nome} />
+        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={funcoes.join(' · ') || u.papel_nome}>
+          {veDashboardComercial(u) && <a className="btn sec" href="/comercial/dashboard">{cidadesVisiveis(u).length ? 'Dashboard comercial' : 'Meus resultados'}</a>}
+        </Topo>
         <p className="frase-dia">
-          {tarefas.length === 0 ? 'Seu setor ainda não tem formulário. Ele aparece aqui assim que for publicado.'
+          {tarefas.length === 0 ? (veDashboardComercial(u) ? 'Acompanhe os números do time pelo Dashboard comercial.' : 'Seu setor ainda não tem formulário. Ele aparece aqui assim que for publicado.')
             : pend ? `Você tem ${pend} ${pend === 1 ? 'formulário' : 'formulários'} para preencher hoje, ${fmtData(dia).slice(0, 5)}.`
             : tarefas.every((t) => t.aguardando) ? 'Nada para preencher agora.' : 'Tudo preenchido hoje. Obrigado!'}
         </p>
@@ -106,7 +109,8 @@ export default async function Inicio() {
       )}
 
       <div className="grade g4 atalhos">
-        <a className="painel atalho" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /><b>Dashboard</b><span>{feitos} de {pend.length} formulários de hoje</span></a>
+        <a className="painel atalho" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /><b>Marketing</b><span>{feitos} de {pend.length} formulários de hoje</span></a>
+        {veDashboardComercial(u) && <a className="painel atalho" href="/comercial/dashboard"><Briefcase aria-hidden="true" /><b>Comercial</b><span>Jesuítas e Toledo</span></a>}
         <a className="painel atalho" href="/admin/lancamentos"><Rocket aria-hidden="true" /><b>Lançamentos</b><span>{ativos.n} {ativos.n === 1 ? 'ativo' : 'ativos'}</span></a>
         {ehSuperadmin(u) && <a className="painel atalho" href="/admin/usuarios"><UserPlus aria-hidden="true" /><b>Pessoas</b><span>{equipe.n} com formulário</span></a>}
         {vePainelEmpresa(u) && <a className="painel atalho" href="/admin/tv"><Tv aria-hidden="true" /><b>Painel da TV</b><span>Abrir na televisão</span></a>}

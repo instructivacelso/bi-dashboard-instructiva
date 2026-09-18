@@ -35,8 +35,18 @@ export default function Etapas() {
   function valida() {
     const sec = secoes()[i];
     if (!sec) return true;
+    for (const g of sec.querySelectorAll('[data-grupo-obrigatorio]')) {
+      if (g.closest('[hidden]')) continue;
+      const caixas = g.querySelectorAll('input[type=checkbox]');
+      if (caixas.length && ![...caixas].some((c) => c.checked)) {
+        caixas[0].setCustomValidity(`Marque pelo menos uma opção em: ${g.dataset.grupoObrigatorio}.`);
+        caixas[0].reportValidity();
+        caixas.forEach((c) => c.addEventListener('change', () => caixas[0].setCustomValidity(''), { once: true }));
+        return false;
+      }
+    }
     for (const el of sec.querySelectorAll('input, select, textarea')) {
-      if (el.disabled || el.type === 'hidden') continue;
+      if (el.disabled || el.type === 'hidden' || el.closest('[hidden]')) continue;
       const cond = el.closest('.condicional');
       const visivelCond = cond && getComputedStyle(cond).display !== 'none';
       el.setCustomValidity('');

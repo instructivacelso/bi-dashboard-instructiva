@@ -19,8 +19,8 @@ export function Texto({ nome, rotulo, valor, obrig = false, longo = false, max =
     <div className="campo">
       <label htmlFor={nome}>{rotulo}</label>
       {longo
-        ? <textarea id={nome} name={nome} defaultValue={valor ?? ''} maxLength={max} />
-        : <input id={nome} name={nome} type="text" defaultValue={valor ?? ''} maxLength={max} />}
+        ? <textarea id={nome} name={nome} defaultValue={valor ?? ''} maxLength={max} required={obrig} />
+        : <input id={nome} name={nome} type="text" defaultValue={valor ?? ''} maxLength={max} required={obrig} />}
       {dica && <small>{dica}</small>}
     </div>
   );
