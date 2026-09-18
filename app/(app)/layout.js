@@ -8,6 +8,8 @@ import { sair } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
+const CURTOS = { trafego: 'Tráfego pago', whatsapp: 'WhatsApp', automacao: 'Automação', editor: 'Vídeos e criativos', live: 'Live', gerente: 'Fechamento do gerente' };
+
 async function montarMenu(u) {
   // Colaborador e prestador externo: só os próprios formulários e histórico
   if (['colaborador', 'externo'].includes(u.papel)) {
@@ -23,7 +25,7 @@ async function montarMenu(u) {
     const [pai, filho] = s.nome.split(' — ');
     const atividades = subs.filter((x) => x.slug === s.slug).map((x) => ({
       href: x.formulario && x.formulario_ativo && x.modulo_ativo ? `/marketing/${x.formulario}` : `/setor/${s.slug}#${x.sub}`,
-      rotulo: x.nome,
+      rotulo: CURTOS[x.formulario] || x.nome,
     }));
     if (filho) {
       let g = arvore.find((x) => x.rotulo === pai);
@@ -36,26 +38,15 @@ async function montarMenu(u) {
     }
   }
   const grupos = [
-    { itens: [
-      { href: '/', rotulo: 'Início', icone: 'inicio' },
-      { href: '/historico', rotulo: 'Histórico', icone: 'historico' },
-      { href: '/acoes', rotulo: 'Ações e problemas', icone: 'acoes' },
-    ] },
+    { itens: [{ href: '/', rotulo: 'Início', icone: 'inicio' }] },
     { titulo: 'Setores', itens: arvore },
   ];
-  if (veDashboardSetor(u, 'marketing')) {
-    grupos.push({ titulo: 'Dashboards', itens: [{ href: '/marketing/dashboard', rotulo: 'Marketing', icone: 'dashboard' }] });
-  }
-  const adm = [];
-  if (ehSuperadmin(u)) {
-    adm.push({ href: '/admin/usuarios', rotulo: 'Usuários', icone: 'usuarios' }, { href: '/admin/setores', rotulo: 'Setores e formulários', icone: 'setores' }, { href: '/admin/produtos', rotulo: 'Produtos', icone: 'produtos' });
-  }
-  if (ehSuperadmin(u) || gerenteDe(u, 'marketing')) adm.push({ href: '/admin/lancamentos', rotulo: 'Lançamentos', icone: 'lancamentos' });
-  if (lancaComercial(u)) adm.push({ href: '/admin/comercial', rotulo: 'Vendas por lançamento', icone: 'comercial' });
-  if (vePainelEmpresa(u) || gerenteDe(u, 'marketing')) adm.push({ href: '/admin/pendencias', rotulo: 'Pendências da equipe', icone: 'pendencias' });
-  if (vePainelEmpresa(u)) adm.push({ href: '/admin/tv', rotulo: 'Painel da TV', icone: 'tv' });
-  if (vePainelEmpresa(u)) adm.push({ href: '/admin/auditoria', rotulo: 'Auditoria', icone: 'auditoria' });
-  if (adm.length) grupos.push({ titulo: 'Gestão', itens: adm });
+  const extra = [];
+  if (veDashboardSetor(u, 'marketing')) extra.push({ href: '/marketing/dashboard', rotulo: 'Dashboard', icone: 'dashboard' });
+  if (vePainelEmpresa(u)) extra.push({ href: '/admin/tv', rotulo: 'Painel da TV', icone: 'tv' });
+  if (ehSuperadmin(u) || gerenteDe(u, 'marketing')) extra.push({ href: '/admin/lancamentos', rotulo: 'Lançamentos', icone: 'lancamentos' });
+  if (ehSuperadmin(u)) extra.push({ href: '/admin/usuarios', rotulo: 'Usuários', icone: 'usuarios' });
+  if (extra.length) grupos.push({ titulo: 'Gestão', itens: extra });
   return grupos;
 }
 

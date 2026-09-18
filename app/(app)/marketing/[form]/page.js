@@ -7,7 +7,7 @@ import {
   FORMULARIOS, formularioAplicavel, lancamentoAberto, DESCRICOES, ETAPAS_AUTOMACAO_ROTULOS, ETAPAS_MONITORADAS, PRIORIDADES,
   TIPOS_ENTREGA, SITUACAO_EDITOR, PRIORIDADE_EDITOR, PLATAFORMAS_LIVE, SEMAFORO_OPCOES, GARGALOS, rotuloEtapa,
 } from '@/lib/formularios.js';
-import { formulariosDo, podeEditar, ehSuperadmin } from '@/lib/perm.js';
+import { formulariosDo, podeEditar, ehSuperadmin, gerenteDe } from '@/lib/perm.js';
 import { lancamentosDoUsuario, dashboardMarketing, responsaveisMarketing, plataformasDo } from '@/lib/dados.js';
 import { calcTrafego, calcWhatsapp, calcLive, dividir, semaforo, variacao } from '@/lib/calc.js';
 import FormEstado from '@/components/FormEstado.js';
@@ -77,11 +77,26 @@ export default async function PaginaFormulario(props) {
     if (!ehSuperadmin(u) && !formulariosDo(u).includes(form)) return <><Topo titulo={titulo} /><Aviso tipo="erro">Este formulário não está atribuído a você.</Aviso></>;
     if (sub && !sub.formulario_ativo) return <><Topo titulo={titulo} /><Aviso>Este formulário foi desativado pelo administrador.</Aviso></>;
     opcoes = (await lancamentosDoUsuario(u)).filter((l) => formularioAplicavel(form, l, dia));
+    const podeGerir = ehSuperadmin(u) || gerenteDe(u, 'marketing');
+    if (!opcoes.length && podeGerir) {
+      const pls = ['Meta Ads'];
+      return (
+        <>
+          <Topo titulo={titulo} descricao={descricao}><a className="btn" href="/admin/lancamentos/novo">Cadastrar lançamento</a></Topo>
+          <Aviso tipo="info">Este é o formulário que a equipe vai preencher. Para liberar o envio, cadastre um lançamento com status Captação, Evento ou Vendas e atribua as pessoas a ele{form === 'live' ? ' (o da live abre só no dia da live ou quando liberado no lançamento)' : ''}.</Aviso>
+          <div className="painel" style={{ marginTop: 16, maxWidth: 760 }}>
+            <fieldset disabled style={{ border: 0, padding: 0, margin: 0 }} className="form">
+              <Campos form={form} v={{}} registros={[]} plataformas={pls} responsaveis={[]} />
+            </fieldset>
+          </div>
+        </>
+      );
+    }
     if (!opcoes.length) {
       return (
         <>
           <Topo titulo={titulo} descricao={descricao}><a className="btn sec" href="/">Voltar</a></Topo>
-          <Vazio>{form === 'live' ? 'Nenhuma live hoje. Este formulário aparece no dia da live ou quando o gerente libera.' : 'Nenhum lançamento ativo atribuído a você para este formulário hoje.'}</Vazio>
+          <Vazio>Seu formulário aparece aqui quando o gerente atribuir um lançamento ativo a você. {form === 'live' ? 'O da live aparece no dia da live.' : ''}</Vazio>
         </>
       );
     }

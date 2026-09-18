@@ -22,6 +22,8 @@ export default async function Usuarios() {
   return (
     <>
       <Topo titulo="Usuários" descricao={`${usuarios.filter((x) => x.ativo).length} ativos. Clique no nome para editar, trocar perfil ou gerar link de senha.`}>
+        <a className="btn sec" href="/admin/setores">Setores e formulários</a>
+        <a className="btn sec" href="/admin/auditoria">Auditoria</a>
         <a className="btn sec" href="/api/exportar/usuarios">Exportar CSV</a>
       </Topo>
       <div className="painel tabela-wrap">

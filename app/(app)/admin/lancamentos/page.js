@@ -16,6 +16,8 @@ export default async function Lancamentos() {
   return (
     <>
       <Topo titulo="Lançamentos" descricao="Cadastro feito uma vez pelo gerente. Todos os formulários e métricas do Marketing ficam vinculados ao lançamento.">
+        <a className="btn sec" href="/admin/produtos">Produtos</a>
+        <a className="btn sec" href="/admin/comercial">Vendas por lançamento</a>
         <a className="btn" href="/admin/lancamentos/novo">Novo lançamento</a>
       </Topo>
       {lancs.length === 0 ? <Vazio>Nenhum lançamento cadastrado.</Vazio> : (
