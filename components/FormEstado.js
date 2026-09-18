@@ -1,5 +1,5 @@
 'use client';
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 
 function Enviar({ texto, textoEnviando }) {
@@ -12,14 +12,34 @@ function Enviar({ texto, textoEnviando }) {
 }
 
 // Formulário com mensagem de erro/sucesso vinda de uma server action
-export default function FormEstado({ action, children, botao = 'Salvar', botaoEnviando, className = 'form', sucesso }) {
+export default function FormEstado({ action, children, botao = 'Salvar', botaoEnviando, className = 'form', sucesso, protegerSaida = false, extra }) {
   const [estado, acao] = useActionState(action, null);
+  const ref = useRef(null);
+  const sujo = useRef(false);
+  // Pergunta antes de sair da página com o formulário preenchido e não enviado
+  useEffect(() => {
+    if (!protegerSaida || !ref.current) return;
+    const f = ref.current;
+    const marcar = () => { sujo.current = true; };
+    const avisar = (e) => { if (sujo.current) { e.preventDefault(); e.returnValue = ''; } };
+    f.addEventListener('input', marcar);
+    window.addEventListener('beforeunload', avisar);
+    return () => { f.removeEventListener('input', marcar); window.removeEventListener('beforeunload', avisar); };
+  }, [protegerSaida]);
+  useEffect(() => { if (estado?.ok) sujo.current = false; }, [estado]);
+  useEffect(() => {
+    if (!ref.current) return;
+    const f = ref.current;
+    const limpar = () => { sujo.current = false; };
+    f.addEventListener('submit', limpar);
+    return () => f.removeEventListener('submit', limpar);
+  }, []);
   return (
-    <form action={acao} className={className}>
+    <form action={acao} className={className} ref={ref}>
       {estado?.erro && <div className="aviso erro" role="alert">{estado.erro}</div>}
-      {estado?.ok && <div className="aviso ok" role="status">{estado.mensagem || sucesso || 'Salvo.'}</div>}
       {children}
-      <div><Enviar texto={botao} textoEnviando={botaoEnviando} /></div>
+      <div className="acoes-linha"><Enviar texto={botao} textoEnviando={botaoEnviando} />{extra}</div>
+      {estado?.ok && <div className="aviso ok" role="status">{estado.mensagem || sucesso || 'Salvo.'}</div>}
     </form>
   );
 }

@@ -1,54 +1,73 @@
 import { exigirUsuario } from '@/lib/auth.js';
-import { historico, lancamentosVisiveis } from '@/lib/dados.js';
+import { historico, lancamentosVisiveis, responsaveisMarketing } from '@/lib/dados.js';
 import { hoje, fmtData, fmtDataHora } from '@/lib/datas.js';
 import { FORMULARIOS } from '@/lib/formularios.js';
 import { vePainelEmpresa, gerenteDe, podeEditar } from '@/lib/perm.js';
 import { Topo, Vazio } from '@/components/Ui.js';
 
 export const dynamic = 'force-dynamic';
+const dataOk = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null);
 
 export default async function Historico(props) {
-  const searchParams = await props.searchParams;
+  const sp = await props.searchParams;
   const u = await exigirUsuario();
   const dia = hoje();
   const equipe = vePainelEmpresa(u) || gerenteDe(u, 'marketing');
-  const form = FORMULARIOS[searchParams.form] ? searchParams.form : null;
-  const verEquipe = equipe && searchParams.meus !== '1';
+  const form = FORMULARIOS[sp.form] ? sp.form : null;
+  const lancs = await lancamentosVisiveis(u);
+  const fLanc = Number(sp.lancamento) || null;
+  const autorId = equipe ? (Number(sp.colaborador) || null) : u.id;
   const linhas = await historico({
-    autorId: verEquipe ? null : u.id,
-    launchIds: verEquipe && !vePainelEmpresa(u) ? (await lancamentosVisiveis(u)).map((l) => l.id) : null,
-    form,
+    autorId,
+    launchIds: fLanc ? [fLanc].filter((id) => lancs.some((l) => l.id === id)) : (equipe && !vePainelEmpresa(u) ? lancs.map((l) => l.id) : null),
+    form, desde: dataOk(sp.desde), ate: dataOk(sp.ate), status: ['enviado', 'editado'].includes(sp.status) ? sp.status : null,
   });
-  const link = (extra) => `/historico?${new URLSearchParams({ ...(form && { form }), ...(!verEquipe && equipe && { meus: '1' }), ...extra })}`;
+  const pessoas = equipe ? await responsaveisMarketing() : [];
 
   return (
     <>
-      <Topo titulo={verEquipe ? 'Histórico da equipe' : 'Meu histórico'} descricao="Registros enviados, do mais recente para o mais antigo. Registros alterados mostram quem alterou por último.">
-        {equipe && <a className="btn sec" href={verEquipe ? '/historico?meus=1' : '/historico'}>{verEquipe ? 'Ver só os meus' : 'Ver da equipe'}</a>}
+      <Topo titulo={equipe ? 'Histórico da equipe' : 'Meus envios'} descricao="Registros enviados, do mais recente para o mais antigo.">
         {vePainelEmpresa(u) && <a className="btn sec" href={`/api/exportar/historico${form ? `?form=${form}` : ''}`}>Exportar CSV</a>}
       </Topo>
-      <nav className="acoes-linha" style={{ marginBottom: 16 }} aria-label="Filtrar por formulário">
-        <a className={`btn peq ${!form ? '' : 'sec'}`} href={`/historico${!verEquipe && equipe ? '?meus=1' : ''}`}>Todos</a>
-        {Object.entries(FORMULARIOS).map(([k, f]) => (
-          <a key={k} className={`btn peq ${form === k ? '' : 'sec'}`} href={`/historico?${new URLSearchParams({ form: k, ...(!verEquipe && equipe && { meus: '1' }) })}`}>{f.titulo}</a>
-        ))}
-      </nav>
-      {linhas.length === 0 ? <Vazio>Nenhum registro ainda.</Vazio> : (
+      <form className="filtros" method="get">
+        {equipe && (
+          <div className="campo"><label htmlFor="f-c">Colaborador</label>
+            <select id="f-c" name="colaborador" defaultValue={sp.colaborador || ''}><option value="">Todos</option>{pessoas.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}</select>
+          </div>
+        )}
+        <div className="campo"><label htmlFor="f-f">Formulário</label>
+          <select id="f-f" name="form" defaultValue={form || ''}><option value="">Todos</option>{Object.entries(FORMULARIOS).map(([k, f]) => <option key={k} value={k}>{f.titulo}</option>)}</select>
+        </div>
+        <div className="campo"><label htmlFor="f-l">Lançamento</label>
+          <select id="f-l" name="lancamento" defaultValue={fLanc || ''}><option value="">Todos</option>{lancs.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}</select>
+        </div>
+        <div className="campo"><label htmlFor="f-d">De</label><input id="f-d" name="desde" type="date" defaultValue={sp.desde || ''} /></div>
+        <div className="campo"><label htmlFor="f-a">Até</label><input id="f-a" name="ate" type="date" defaultValue={sp.ate || ''} /></div>
+        <div className="campo"><label htmlFor="f-s">Status</label>
+          <select id="f-s" name="status" defaultValue={sp.status || ''}><option value="">Todos</option><option value="enviado">Enviado</option><option value="editado">Editado</option></select>
+        </div>
+        <button className="btn peq" type="submit">Filtrar</button>
+      </form>
+      {linhas.length === 0 ? <Vazio>Nenhum registro encontrado.</Vazio> : (
         <div className="painel tabela-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Formulário</th><th>Lançamento</th><th>Resumo</th>{verEquipe && <th>Autor</th>}<th>Última alteração</th><th /></tr></thead>
+            <thead><tr><th>Data</th><th>Lançamento</th><th>Formulário</th>{equipe && <th>Colaborador</th>}<th>Resumo</th><th>Status</th><th>Enviado em</th><th /></tr></thead>
             <tbody>
               {linhas.map((r) => {
                 const perm = podeEditar(u, r, dia);
                 return (
                   <tr key={`${r.form}-${r.id}`}>
                     <td>{fmtData(r.data_ref)}</td>
-                    <td>{FORMULARIOS[r.form].titulo}</td>
                     <td>{r.lancamento}</td>
-                    <td>{r.resumo}</td>
-                    {verEquipe && <td>{r.autor}</td>}
-                    <td className="pequeno suave">{fmtDataHora(r.updated_at)}{r.updated_by && r.updated_by !== r.created_by ? ' · corrigido' : ''}</td>
-                    <td>{perm.pode && <a className="btn sec peq" href={`/marketing/${r.form}?registro=${r.id}`}>{perm.correcao ? 'Corrigir' : 'Editar'}</a>}</td>
+                    <td>{FORMULARIOS[r.form].titulo}</td>
+                    {equipe && <td>{r.autor}</td>}
+                    <td className="pequeno">{r.resumo}</td>
+                    <td>{r.updated_by ? <span className="selo amarelo">Editado</span> : <span className="selo verde">Enviado</span>}</td>
+                    <td className="pequeno suave">{fmtDataHora(r.created_at)}</td>
+                    <td><div className="acoes-linha" style={{ flexWrap: 'nowrap' }}>
+                      <a className="btn sec peq" href={`/historico/${r.form}/${r.id}`}>Visualizar</a>
+                      {perm.pode && <a className="btn sec peq" href={`/marketing/${r.form}?registro=${r.id}`}>{perm.correcao ? 'Corrigir' : 'Editar'}</a>}
+                    </div></td>
                   </tr>
                 );
               })}

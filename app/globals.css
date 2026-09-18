@@ -316,3 +316,25 @@ details.bloco > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .menu .submenu a.sub.ativo::before { left: -14px; top: 6px; bottom: 6px; }
 .marca strong { font-size: 0.95rem; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .menu-pai .seta { transition: none; } }
+
+/* Formulários v2 */
+.moeda { position: relative; }
+.moeda span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--suave); font-weight: 600; pointer-events: none; }
+.moeda input { padding-left: 42px !important; }
+form:has(.gatilho-falha input[value="falha"]:checked) .cond-falha { display: flex; }
+.condicional { animation: surgir 0.2s ease-out; }
+@keyframes surgir { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .condicional { animation: none; } }
+.bloco-plataforma { border: 1px solid var(--linha); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; background: var(--bg-2); }
+.bloco-plataforma h3 { display: flex; align-items: center; gap: 8px; }
+.status-linha { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--linha); }
+.status-linha:last-of-type { border-bottom: 0; }
+.status-linha .escolha label { min-height: 38px; padding: 6px 12px; }
+@media (max-width: 640px) { .status-linha { grid-template-columns: 1fr; } }
+.comparativo td.var-pos { color: var(--verde); font-weight: 700; }
+.comparativo td.var-neg { color: var(--vermelho); font-weight: 700; }
+.contador { font-size: 0.8rem; color: var(--suave); }
+/* Tráfego: o problema de cada plataforma abre só no próprio bloco */
+form .bloco-plataforma .cond-problema { display: none !important; }
+form .bloco-plataforma:has(.gatilho-problema input[value="sim"]:checked) .cond-problema { display: flex !important; }
+.bloco-cab { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }

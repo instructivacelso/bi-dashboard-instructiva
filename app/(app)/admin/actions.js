@@ -9,6 +9,7 @@ import { auditar } from '@/lib/auditoria.js';
 import { lerNumero } from '@/lib/formato.js';
 import { hoje } from '@/lib/datas.js';
 import { ehSuperadmin, gerenteDe, lancaComercial } from '@/lib/perm.js';
+import { PLATAFORMAS_TRAFEGO } from '@/lib/formularios.js';
 
 class Erro extends Error {}
 const falha = (m) => { throw new Erro(m); };
@@ -204,7 +205,10 @@ export async function salvarLancamento(_e, fd) {
         await auditar(db, { userId: u.id, acao: 'criar', entidade: 'launches', entidadeId: novoId, depois: { ...d, atribuidos } });
       }
       await db.query('DELETE FROM launch_user_assignments WHERE launch_id=$1', [novoId]);
-      for (const uid of atribuidos) await db.query('INSERT INTO launch_user_assignments (launch_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [novoId, uid]);
+      for (const uid of atribuidos) {
+        const pls = fd.getAll(`plataformas_${uid}`).map(String).filter((p) => PLATAFORMAS_TRAFEGO.includes(p));
+        await db.query('INSERT INTO launch_user_assignments (launch_id, user_id, plataformas) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [novoId, uid, pls.length ? pls : null]);
+      }
     });
     return { mensagem: id ? 'Lançamento atualizado.' : 'Lançamento criado.', novoId, criado: !id };
   }, '/admin/lancamentos');

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { exigirUsuario } from '@/lib/auth.js';
 import { q, q1 } from '@/lib/db.js';
 import { ehSuperadmin, gerenteDe } from '@/lib/perm.js';
-import { STATUS_LANCAMENTO } from '@/lib/formularios.js';
+import { STATUS_LANCAMENTO, PLATAFORMAS_TRAFEGO } from '@/lib/formularios.js';
 import { Topo, Aviso } from '@/components/Ui.js';
 import FormEstado from '@/components/FormEstado.js';
 import { salvarLancamento } from '../../actions.js';
@@ -28,10 +28,10 @@ export default async function EditarLancamento(props) {
     q('SELECT id, nome FROM products WHERE ativo ORDER BY nome'),
     q(`SELECT DISTINCT u.id, u.nome FROM users u JOIN user_department_assignments a ON a.user_id=u.id JOIN departments d ON d.id=a.department_id
         WHERE u.ativo AND d.slug='marketing' AND a.gerente ORDER BY u.nome`),
-    q(`SELECT u.id, u.nome, r.nome perfil, string_agg(s.nome, ', ') atividades FROM users u JOIN roles r ON r.id=u.role_id
+    q(`SELECT u.id, u.nome, r.nome perfil, string_agg(s.nome, ', ') atividades, bool_or(s.formulario='trafego') trafego FROM users u JOIN roles r ON r.id=u.role_id
          JOIN user_department_assignments a ON a.user_id=u.id JOIN departments d ON d.id=a.department_id LEFT JOIN subdepartments s ON s.id=a.subdepartment_id
         WHERE u.ativo AND d.slug='marketing' GROUP BY u.id, u.nome, r.nome ORDER BY u.nome`),
-    novo ? [] : q('SELECT user_id FROM launch_user_assignments WHERE launch_id=$1', [l.id]),
+    novo ? [] : q('SELECT user_id, plataformas FROM launch_user_assignments WHERE launch_id=$1', [l.id]),
   ]);
   const ids = new Set(atribuidos.map((a) => a.user_id));
 
@@ -86,10 +86,20 @@ export default async function EditarLancamento(props) {
           </div>
           <h2>Equipe atribuída</h2>
           <p className="suave pequeno">Só quem estiver marcado vê este lançamento e recebe os formulários dele. Prestadores externos veem apenas os lançamentos marcados aqui.</p>
-          <div className="escolha">
-            {equipe.map((p) => (
-              <label key={p.id}><input type="checkbox" name="usuarios" value={p.id} defaultChecked={ids.has(p.id)} /> {p.nome} <span className="suave pequeno">· {p.atividades || p.perfil}</span></label>
-            ))}
+          <div className="grade" style={{ gap: 8 }}>
+            {equipe.map((p) => {
+              const pls = atribuidos.find((a) => a.user_id === p.id)?.plataformas || ['Meta Ads'];
+              return (
+                <div key={p.id} className="bloco-plataforma" style={{ padding: 12 }}>
+                  <label style={{ fontWeight: 700, display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" name="usuarios" value={p.id} defaultChecked={ids.has(p.id)} /> {p.nome} <span className="suave pequeno" style={{ fontWeight: 400 }}>· {p.atividades || p.perfil}</span></label>
+                  {p.trafego && (
+                    <div className="escolha" aria-label={`Plataformas de ${p.nome}`}>
+                      {PLATAFORMAS_TRAFEGO.map((pl) => <label key={pl}><input type="checkbox" name={`plataformas_${p.id}`} value={pl} defaultChecked={pls.includes(pl)} /> {pl}</label>)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </FormEstado>
       </div>

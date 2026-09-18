@@ -1,7 +1,7 @@
 import { exigirUsuario } from '@/lib/auth.js';
 import { tarefasDoDia, lancamentosDoUsuario, problemasAbertos } from '@/lib/dados.js';
 import { hoje, fmtData } from '@/lib/datas.js';
-import { STATUS_LANCAMENTO, lancamentoAberto } from '@/lib/formularios.js';
+import { STATUS_LANCAMENTO, lancamentoAberto, DESCRICOES } from '@/lib/formularios.js';
 import { vePainelEmpresa, veDashboardSetor } from '@/lib/perm.js';
 import { Topo, StatusTarefa, Vazio, Semaforo } from '@/components/Ui.js';
 
@@ -17,22 +17,38 @@ export default async function Inicio() {
 
   // Tela simples para quem só preenche formulário
   if (['colaborador', 'externo'].includes(u.papel)) {
+    const abertos = [...problemas.incidentes.filter((i) => i.responsavel_id === u.id || i.created_by === u.id), ...problemas.acoes.filter((x) => x.responsavel_id === u.id)];
     return (
       <>
-        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={pendentes ? `Você tem ${pendentes} ${pendentes === 1 ? 'formulário' : 'formulários'} para preencher hoje.` : tarefas.length ? 'Tudo preenchido hoje. Obrigado!' : 'Nenhum formulário para hoje.'} />
-        {tarefas.length === 0 ? <Vazio>Quando houver um formulário para você, ele aparece aqui.</Vazio> : (
+        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={`${funcoes.join(', ') || u.papel_nome} · ${ativos.length} ${ativos.length === 1 ? 'lançamento ativo' : 'lançamentos ativos'}`}>
+          <a className="btn sec" href="/historico">Ver histórico</a>
+        </Topo>
+        {tarefas.length === 0 ? <Vazio>Nenhum formulário para hoje. Quando houver, ele aparece aqui.</Vazio> : (
           <div className="grade g2">
             {tarefas.map((t) => (
-              <a key={`${t.form}-${t.lancamento.id}`} href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`} className="painel atividade" style={{ color: 'inherit', textDecoration: 'none' }}>
+              <article key={`${t.form}-${t.lancamento.id}`} className="painel atividade">
                 <div className="painel-cab" style={{ marginBottom: 0 }}>
                   <h2>{t.titulo}</h2>
                   <StatusTarefa concluido={t.concluido} />
                 </div>
-                <p>{t.lancamento.nome}</p>
-                <div className="rodape"><span className={`btn ${t.concluido ? 'sec' : ''}`}>{t.concluido ? 'Revisar envio' : 'Preencher agora'}</span></div>
-              </a>
+                <p><b style={{ color: 'var(--texto)' }}>{t.lancamento.nome}</b></p>
+                <p className="pequeno">{DESCRICOES[t.form]}</p>
+                <p className="pequeno">{t.ultimoEnvio ? `Último envio hoje às ${new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(t.ultimoEnvio))}` : 'Ainda não enviado hoje'}{t.detalhe ? ` · ${t.detalhe}` : ''}</p>
+                <div className="rodape">
+                  <a className={`btn ${t.concluido ? 'sec' : ''}`} href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`}>{t.concluido ? 'Revisar envio' : 'Preencher agora'}</a>
+                  <a className="btn sec" href={`/historico?form=${t.form}`}>Ver histórico</a>
+                </div>
+              </article>
             ))}
           </div>
+        )}
+        {abertos.length > 0 && (
+          <section className="secao painel">
+            <div className="painel-cab"><h2>Problemas e ações em aberto</h2></div>
+            <table><tbody>{abertos.slice(0, 6).map((x, k) => (
+              <tr key={k}><td><span className={`selo ${x.prioridade ? 'vermelho' : 'laranja'}`}>{x.prioridade ? 'Incidente' : 'Ação'}</span></td><td>{x.descricao || x.acao}<br /><span className="suave pequeno">{x.lancamento || 'Geral'}</span></td></tr>
+            ))}</tbody></table>
+          </section>
         )}
       </>
     );

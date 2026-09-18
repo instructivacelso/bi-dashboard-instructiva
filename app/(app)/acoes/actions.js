@@ -24,14 +24,24 @@ export async function atualizarAcao(fd) {
   revalidatePath('/acoes');
 }
 
-export async function resolverIncidente(fd) {
+export async function atualizarIncidente(fd) {
   const u = await exigirUsuario();
   const id = Number(fd.get('id'));
+  const status = String(fd.get('status'));
+  const resp = Number(fd.get('responsavel_id')) || null;
+  if (!['aberto', 'em_andamento', 'resolvido'].includes(status)) return;
   const pode = ehSuperadmin(u) || gerenteDe(u, 'marketing') || formulariosDo(u).includes('automacao');
   if (!pode || ehDiretoria(u)) return;
   await transacao(async (db) => {
-    await db.query(`UPDATE automation_incidents SET status='resolvido', resolvido_em=now(), updated_by=$1, updated_at=now() WHERE id=$2 AND status='aberto'`, [u.id, id]);
-    await auditar(db, { userId: u.id, acao: 'resolver', entidade: 'automation_incidents', entidadeId: id });
+    const antes = (await db.query('SELECT status, responsavel_id FROM automation_incidents WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!antes) return;
+    await db.query(
+      `UPDATE automation_incidents SET status=$1, responsavel_id=COALESCE($2, responsavel_id),
+         iniciado_em = CASE WHEN $1='em_andamento' AND iniciado_em IS NULL THEN now() ELSE iniciado_em END,
+         resolvido_em = CASE WHEN $1='resolvido' THEN now() ELSE NULL END, updated_by=$3, updated_at=now() WHERE id=$4`,
+      [status, resp, u.id, id]
+    );
+    await auditar(db, { userId: u.id, acao: 'editar', entidade: 'automation_incidents', entidadeId: id, antes, depois: { status, responsavel_id: resp } });
   });
   revalidatePath('/acoes');
 }
