@@ -13,15 +13,35 @@ async function montarMenu(u) {
   if (['colaborador', 'externo'].includes(u.papel)) {
     return [{ itens: [{ href: '/', rotulo: 'Meus formulários', icone: 'inicio' }, { href: '/historico', rotulo: 'Meus envios', icone: 'historico' }] }];
   }
-  const setores = await q('SELECT slug, nome, modulo_ativo FROM departments WHERE ativo ORDER BY ordem');
+  const setores = await q('SELECT slug, nome, modulo_ativo FROM departments WHERE ativo ORDER BY ordem, id');
   const meus = vePainelEmpresa(u) ? setores : setores.filter((s) => u.lotacoes.some((l) => l.setor === s.slug));
+  // Setores em árvore: "Comercial — Toledo" vira Comercial > Toledo; setor com formulários mostra as atividades
+  const subs = await q(`SELECT s.nome, s.slug AS sub, s.formulario, s.formulario_ativo, d.slug, d.modulo_ativo FROM subdepartments s
+                          JOIN departments d ON d.id=s.department_id WHERE s.ativo ORDER BY s.ordem, s.id`);
+  const arvore = [];
+  for (const s of meus) {
+    const [pai, filho] = s.nome.split(' — ');
+    const atividades = subs.filter((x) => x.slug === s.slug).map((x) => ({
+      href: x.formulario && x.formulario_ativo && x.modulo_ativo ? `/marketing/${x.formulario}` : `/setor/${s.slug}#${x.sub}`,
+      rotulo: x.nome,
+    }));
+    if (filho) {
+      let g = arvore.find((x) => x.rotulo === pai);
+      if (!g) { g = { rotulo: pai, icone: s.slug, filhos: [] }; arvore.push(g); }
+      g.filhos.push({ href: `/setor/${s.slug}`, rotulo: filho });
+    } else if (atividades.length) {
+      arvore.push({ rotulo: s.nome, icone: s.slug, filhos: atividades, base: `/setor/${s.slug}` });
+    } else {
+      arvore.push({ href: `/setor/${s.slug}`, rotulo: s.nome, icone: s.slug });
+    }
+  }
   const grupos = [
     { itens: [
       { href: '/', rotulo: 'Início', icone: 'inicio' },
       { href: '/historico', rotulo: 'Histórico', icone: 'historico' },
       { href: '/acoes', rotulo: 'Ações e problemas', icone: 'acoes' },
     ] },
-    { titulo: 'Setores', itens: meus.map((s) => ({ href: `/setor/${s.slug}`, rotulo: s.nome, icone: s.slug })) },
+    { titulo: 'Setores', itens: arvore },
   ];
   if (veDashboardSetor(u, 'marketing')) {
     grupos.push({ titulo: 'Dashboards', itens: [{ href: '/marketing/dashboard', rotulo: 'Marketing', icone: 'dashboard' }] });

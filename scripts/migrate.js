@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
-import { PERFIS, SETORES, SUBSETORES_MARKETING } from '../lib/estrutura.js';
+import { PERFIS, SETORES, SUBSETORES_MARKETING, SUBSETORES_OUTROS } from '../lib/estrutura.js';
 
 const dir = path.resolve(process.cwd(), 'db/migrations');
 
@@ -53,6 +53,17 @@ async function main() {
          ON CONFLICT (department_id, slug) DO NOTHING`,
         [mkt, s.slug, s.nome, s.descricao, s.formulario, s.ordem]
       );
+    }
+
+    for (const [slug, lista] of Object.entries(SUBSETORES_OUTROS)) {
+      const dep = (await client.query('SELECT id FROM departments WHERE slug=$1', [slug])).rows[0];
+      if (!dep) continue;
+      for (const x of lista) {
+        await client.query(
+          `INSERT INTO subdepartments (department_id, slug, nome, ordem) VALUES ($1,$2,$3,$4) ON CONFLICT (department_id, slug) DO NOTHING`,
+          [dep.id, x.slug, x.nome, x.ordem]
+        );
+      }
     }
 
     const { rows } = await client.query(`SELECT COUNT(*)::int n FROM users u JOIN roles r ON r.id=u.role_id WHERE r.chave='superadmin'`);

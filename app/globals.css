@@ -137,6 +137,7 @@ p { margin: 0; }
 .atividade { display: flex; flex-direction: column; gap: 10px; transition: border-color 0.2s, transform 0.2s; }
 .atividade:hover { border-color: rgba(255, 106, 26, 0.45); transform: translateY(-2px); }
 .atividade p { color: var(--suave); font-size: 0.9rem; }
+.atividade > .selo { align-self: flex-start; }
 .atividade .rodape { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 8px; }
 .icone-card { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(255, 106, 26, 0.12); color: var(--laranja-2); }
 .icone-card svg { width: 21px; height: 21px; }
@@ -297,3 +298,21 @@ details.bloco > summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .botao-tema { background: none; border: 1px solid var(--linha-2); color: var(--suave); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; display: grid; place-items: center; }
 .botao-tema:hover { color: var(--texto); border-color: var(--laranja); }
 .tv { background: radial-gradient(1200px 600px at 85% -10%, rgba(255,106,26,.12), transparent 60%), var(--bg); color: var(--texto); }
+
+/* Menu em árvore */
+.menu-pai > summary {
+  list-style: none; cursor: pointer; color: var(--suave); padding: 9px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 500;
+  display: flex; align-items: center; gap: 11px; user-select: none;
+}
+.menu-pai > summary::-webkit-details-marker { display: none; }
+.menu-pai > summary svg { width: 18px; height: 18px; flex: none; opacity: 0.85; }
+.menu-pai > summary:hover { background: var(--card-2); color: var(--texto); }
+.menu-pai > summary.dentro { color: var(--forte); font-weight: 700; }
+.menu-pai > summary.dentro svg:first-child { color: var(--laranja-2); opacity: 1; }
+.menu-pai .seta { width: 15px !important; height: 15px !important; transition: transform 0.2s; }
+.menu-pai[open] .seta { transform: rotate(90deg); }
+.submenu { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 6px 21px; padding-left: 12px; border-left: 1px solid var(--linha-2); }
+.menu .submenu a.sub { padding: 7px 10px; font-size: 0.85rem; border-radius: 10px; }
+.menu .submenu a.sub.ativo::before { left: -14px; top: 6px; bottom: 6px; }
+.marca strong { font-size: 0.95rem; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .menu-pai .seta { transition: none; } }

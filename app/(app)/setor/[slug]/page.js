@@ -26,10 +26,22 @@ export default async function Setor(props) {
   );
 
   if (!setor.modulo_ativo) {
+    const lista = await q('SELECT slug, nome FROM subdepartments WHERE department_id=$1 AND ativo ORDER BY ordem, id', [setor.id]);
     return (
       <>
         <Topo titulo={setor.nome}>{botoes}</Topo>
-        <Vazio>O formulário deste setor ainda vai ser publicado.</Vazio>
+        {lista.length > 0 && (
+          <div className="grade g3" style={{ marginBottom: 16 }}>
+            {lista.map((x) => (
+              <div key={x.slug} id={x.slug} className="painel atividade">
+                <div className="icone-card"><ClipboardList aria-hidden="true" /></div>
+                <h3>{x.nome}</h3>
+                <span className="selo neutro">Formulário em preparação</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {lista.length === 0 && <Vazio>O formulário deste setor ainda vai ser publicado.</Vazio>}
       </>
     );
   }
