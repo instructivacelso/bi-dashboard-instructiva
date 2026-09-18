@@ -16,6 +16,7 @@ import { Numero, Texto, Escolha, Selecao, DataCampo, SIM_NAO, sn } from '@/compo
 import { Topo, Aviso, Vazio, Kpi, Semaforo } from '@/components/Ui.js';
 import { salvarFormulario } from '../actions.js';
 import SeletorLancamento from '@/components/SeletorLancamento.js';
+import Etapas from '@/components/Etapas.js';
 
 export const dynamic = 'force-dynamic';
 const opcoesDe = (obj) => Object.entries(obj).map(([valor, rotulo]) => ({ valor, rotulo }));
@@ -90,6 +91,7 @@ export default async function PaginaFormulario(props) {
               <input type="hidden" name="form" value={form} />
               <input type="hidden" name="teste" value="1" />
               <SeletorLancamento opcoes={[]} form={form} desabilitado />
+              <Etapas />
               <Campos form={form} v={{}} registros={[]} plataformas={['Meta Ads']} responsaveis={await responsaveisMarketing()} />
             </FormEstado>
           </div>
@@ -153,7 +155,7 @@ export default async function PaginaFormulario(props) {
               {correcao
                 ? <><input type="hidden" name="launch_id" value={lanc.id} /><input type="hidden" name="registro_id" value={v.id} /></>
                 : <SeletorLancamento opcoes={opcoes} atual={lanc.id} form={form} />}
-              <p className="contador">Todos os campos são obrigatórios. Se não houve movimento, informe 0.</p>
+              <Etapas />
               <Campos form={form} v={v} registros={registros} plataformas={plataformas} responsaveis={responsaveis} />
               {correcao && <Texto nome="motivo" rotulo="Motivo da correção" obrig longo dica="Obrigatório. Explique o que estava errado." />}
             </FormEstado>
@@ -174,28 +176,28 @@ function Campos({ form, v, registros, plataformas, responsaveis }) {
         const r = registros.find((x) => x.plataforma === pl) || {};
         const p = (c) => `p${i}_${c}`;
         return (
-          <div key={pl} className={plataformas.length > 1 ? 'bloco-plataforma' : ''}>
+          <div key={pl} style={{ display: 'contents' }}>
             <input type="hidden" name="plataforma" value={pl} />
-            <Sec titulo={`Investimento · ${pl}`}>
+            <Sec titulo={plataformas.length > 1 ? `Investimento · ${pl}` : 'Investimento'}>
               <div className="linha-campos">
                 <Moeda nome={p('orcamento_dia')} rotulo="Orçamento previsto para hoje" valor={r.orcamento_dia} dica="Quanto estava planejado gastar hoje nesta plataforma." />
                 <Moeda nome={p('valor_gasto')} rotulo="Valor gasto hoje" valor={r.valor_gasto} dica="Valor que aparece no gerenciador de anúncios." />
               </div>
             </Sec>
-            <Sec titulo="Resultado dos anúncios">
+            <Sec titulo={plataformas.length > 1 ? `Anúncios · ${pl}` : 'Resultado dos anúncios'}>
               <div className="linha-campos">
                 <Numero nome={p('impressoes')} rotulo="Impressões" valor={r.impressoes} dica="Quantas vezes os anúncios apareceram." />
                 <Numero nome={p('cliques')} rotulo="Cliques no link" valor={r.cliques} dica="Cliques que levaram para a página." />
               </div>
             </Sec>
-            <Sec titulo="Página de captação">
+            <Sec titulo={plataformas.length > 1 ? `Página · ${pl}` : 'Página de captação'}>
               <div className="linha-campos">
                 <Numero nome={p('visitas')} rotulo="Visitas na página" valor={r.visitas} dica="Pessoas que realmente carregaram a página." />
                 <Numero nome={p('cadastros')} rotulo="Cadastros concluídos" valor={r.cadastros} dica="Quem terminou o cadastro hoje." />
               </div>
               <Decimal nome={p('tempo_carregamento')} rotulo="Tempo médio para a página abrir (segundos)" valor={r.tempo_carregamento} dica="Exemplo: 2,5" />
             </Sec>
-            <Sec titulo="Problemas">
+            <Sec titulo={plataformas.length > 1 ? `Problemas · ${pl}` : 'Algum problema?'}>
               <Escolha nome={p('houve_problema')} rotulo="Aconteceu algum problema hoje?" opcoes={SIM_NAO} valor={sn(r.houve_problema)} classe="gatilho-problema" />
               <div className="condicional cond-problema">
                 <Texto nome={p('problema_descricao')} rotulo="O que aconteceu?" valor={r.problema_descricao} />
@@ -230,14 +232,14 @@ function Campos({ form, v, registros, plataformas, responsaveis }) {
               <Numero nome="entradas_organico" rotulo="Entraram pelo orgânico" valor={v.entradas_organico} />
               <Numero nome="saidas" rotulo="Saíram dos grupos" valor={v.saidas} />
             </div>
+            <div className="campo gatilho-problema">
+              <div className="escolha"><label><input type="checkbox" name="houve_problema" value="sim" defaultChecked={v.houve_problema} /> Aconteceu algum problema hoje</label></div>
+            </div>
+            <div className="condicional cond-problema">
+              <Texto nome="problema_descricao" rotulo="O que aconteceu?" valor={v.problema_descricao} />
+              <Texto nome="problema_acao" rotulo="O que foi feito ou precisa ser feito?" valor={v.problema_acao} />
+            </div>
           </Sec>
-          <div className="campo gatilho-problema">
-            <div className="escolha"><label><input type="checkbox" name="houve_problema" value="sim" defaultChecked={v.houve_problema} /> Registrar problema</label></div>
-          </div>
-          <div className="condicional cond-problema">
-            <Texto nome="problema_descricao" rotulo="O que aconteceu?" valor={v.problema_descricao} />
-            <Texto nome="problema_acao" rotulo="O que foi feito ou precisa ser feito?" valor={v.problema_acao} />
-          </div>
         </>
       );
     case 'automacao':
@@ -255,7 +257,6 @@ function Campos({ form, v, registros, plataformas, responsaveis }) {
                 </div>
               ))}
             </div>
-          </Sec>
           <div className="condicional cond-falha">
             <p className="pequeno"><strong>Algo falhou: registre o incidente.</strong> Ele fica aberto para o gerente até ser resolvido.</p>
             <Selecao nome="etapa" rotulo="Qual etapa falhou?" obrig={false} opcoes={opcoesDe(ETAPAS_AUTOMACAO_ROTULOS)} />
@@ -264,6 +265,7 @@ function Campos({ form, v, registros, plataformas, responsaveis }) {
             <Escolha nome="prioridade" rotulo="Prioridade" opcoes={PRIORIDADES} obrig={false} />
             <DataCampo nome="previsao_solucao" rotulo="Previsão de solução" />
           </div>
+          </Sec>
         </>
       );
     case 'editor':
@@ -387,7 +389,7 @@ async function ComparativoTrafego({ lanc, dia }) {
   const tot = metr(antes.find((r) => r.plataforma === null));
   return (
     <section className="painel form-claro" style={{ maxWidth: 'none' }}>
-      <div className="painel-cab" style={{ marginBottom: 10 }}><h2>Como foi o dia anterior{ant.d ? ` (${fmtData(ant.d).slice(0, 5)})` : ''}</h2></div>
+      <div className="painel-cab" style={{ marginBottom: 10 }}><h2>Último dia registrado{ant.d ? ` (${fmtData(ant.d).slice(0, 5)})` : ""}</h2></div>
       {!tot ? <p className="suave">Sem registro anterior.</p> : (
         <>
           <div className="ontem">

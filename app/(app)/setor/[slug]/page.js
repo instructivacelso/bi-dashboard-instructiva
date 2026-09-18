@@ -58,7 +58,7 @@ export default async function Setor(props) {
       {visiveis.length === 0 ? <Vazio>Nenhum formulário atribuído a você neste setor.</Vazio> : (
         <div className="grade g3">
           {visiveis.map((s) => {
-            const minhas = tarefas.filter((t) => t.form === s.formulario);
+            const minhas = tarefas.filter((t) => t.form === s.formulario && !t.aguardando);
             const pend = minhas.find((t) => !t.concluido);
             const I = ICONE_FORM[s.formulario] || ClipboardList;
             return (

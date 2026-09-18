@@ -1,138 +1,135 @@
 import { exigirUsuario } from '@/lib/auth.js';
-import { tarefasDoDia, lancamentosDoUsuario, problemasAbertos } from '@/lib/dados.js';
+import { q1 } from '@/lib/db.js';
+import { tarefasDoDia, problemasAbertos, pendenciasEquipe } from '@/lib/dados.js';
 import { hoje, fmtData } from '@/lib/datas.js';
-import { STATUS_LANCAMENTO, lancamentoAberto, DESCRICOES } from '@/lib/formularios.js';
-import { vePainelEmpresa, veDashboardSetor } from '@/lib/perm.js';
-import { Topo, StatusTarefa, Vazio, Semaforo } from '@/components/Ui.js';
+import { DESCRICOES } from '@/lib/formularios.js';
+import { vePainelEmpresa, gerenteDe, ehSuperadmin } from '@/lib/perm.js';
+import { Topo, StatusTarefa, Vazio } from '@/components/Ui.js';
+import { Target, MessageCircle, Workflow, Clapperboard, Radio, ClipboardList, Rocket, UserPlus, BarChart3, Tv, Check } from 'lucide-react';
+
+const ICONE = { trafego: Target, whatsapp: MessageCircle, automacao: Workflow, editor: Clapperboard, live: Radio, gerente: ClipboardList };
+const hora = (d) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(d));
+
+function CartaoFormulario({ t }) {
+  const I = ICONE[t.form] || ClipboardList;
+  if (t.aguardando) {
+    return (
+      <article className="painel cartao-form aguardando">
+        <div className="cartao-topo"><span className="icone-card"><I aria-hidden="true" /></span><span className="selo neutro">Aguardando</span></div>
+        <h2>{t.titulo}</h2>
+        <p className="suave pequeno">Nenhum lançamento aberto no momento. Quando o gerente abrir um, seu formulário libera aqui.</p>
+      </article>
+    );
+  }
+  return (
+    <a href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`} className={`painel cartao-form ${t.concluido ? 'feito' : ''}`}>
+      <div className="cartao-topo"><span className="icone-card"><I aria-hidden="true" /></span><StatusTarefa concluido={t.concluido} /></div>
+      <h2>{t.titulo}</h2>
+      <p className="cartao-lanc">{t.lancamento.nome}</p>
+      <p className="suave pequeno">{DESCRICOES[t.form]}</p>
+      <div className="cartao-rodape">
+        <span className="suave pequeno">{t.ultimoEnvio ? `Enviado às ${hora(t.ultimoEnvio)}` : 'Ainda não enviado hoje'}{t.detalhe ? ` · ${t.detalhe}` : ''}</span>
+        <span className={`btn ${t.concluido ? 'sec' : ''}`}>{t.concluido ? 'Revisar' : 'Preencher agora'}</span>
+      </div>
+    </a>
+  );
+}
 
 export default async function Inicio() {
   const u = await exigirUsuario();
   const dia = hoje();
-  const [tarefas, lancs, problemas] = await Promise.all([tarefasDoDia(u, dia), lancamentosDoUsuario(u), problemasAbertos(u)]);
-  const ativos = lancs.filter(lancamentoAberto);
-  const pendentes = tarefas.filter((t) => !t.concluido).length;
-  const funcoes = [...new Set(u.lotacoes.map((l) => (l.subsetorNome ? `${l.setorNome} · ${l.subsetorNome}` : l.setorNome)))];
   const prim = u.nome.split(' ')[0];
   const iniciais = u.nome.split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase();
+  const tarefas = await tarefasDoDia(u, dia);
+  const funcoes = [...new Set(u.lotacoes.map((l) => l.subsetorNome || l.setorNome))];
+  const gestor = ehSuperadmin(u) || vePainelEmpresa(u) || gerenteDe(u, 'marketing');
 
-  // Tela simples para quem só preenche formulário
-  if (['colaborador', 'externo'].includes(u.papel)) {
-    const abertos = [...problemas.incidentes.filter((i) => i.responsavel_id === u.id || i.created_by === u.id), ...problemas.acoes.filter((x) => x.responsavel_id === u.id)];
+  // ---------- Colaborador / prestador externo ----------
+  if (!gestor) {
+    const pend = tarefas.filter((t) => !t.concluido && !t.aguardando).length;
+    const prob = await problemasAbertos(u);
+    const acoes = prob.acoes.filter((x) => x.responsavel_id === u.id);
     return (
       <>
-        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={`${funcoes.join(', ') || u.papel_nome} · ${ativos.length} ${ativos.length === 1 ? 'lançamento ativo' : 'lançamentos ativos'}`}>
-          <a className="btn sec" href="/historico">Ver histórico</a>
-        </Topo>
-        {tarefas.length === 0 ? <Vazio>Nenhum formulário para hoje. Quando houver, ele aparece aqui.</Vazio> : (
-          <div className="grade g2">
-            {tarefas.map((t) => (
-              <article key={`${t.form}-${t.lancamento.id}`} className="painel atividade">
-                <div className="painel-cab" style={{ marginBottom: 0 }}>
-                  <h2>{t.titulo}</h2>
-                  <StatusTarefa concluido={t.concluido} />
-                </div>
-                <p><b style={{ color: 'var(--texto)' }}>{t.lancamento.nome}</b></p>
-                <p className="pequeno">{DESCRICOES[t.form]}</p>
-                <p className="pequeno">{t.ultimoEnvio ? `Último envio hoje às ${new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date(t.ultimoEnvio))}` : 'Ainda não enviado hoje'}{t.detalhe ? ` · ${t.detalhe}` : ''}</p>
-                <div className="rodape">
-                  <a className={`btn ${t.concluido ? 'sec' : ''}`} href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`}>{t.concluido ? 'Revisar envio' : 'Preencher agora'}</a>
-                  <a className="btn sec" href={`/historico?form=${t.form}`}>Ver histórico</a>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-        {abertos.length > 0 && (
+        <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={funcoes.join(' · ') || u.papel_nome} />
+        <p className="frase-dia">
+          {tarefas.length === 0 ? 'Seu setor ainda não tem formulário. Ele aparece aqui assim que for publicado.'
+            : pend ? `Você tem ${pend} ${pend === 1 ? 'formulário' : 'formulários'} para preencher hoje, ${fmtData(dia).slice(0, 5)}.`
+            : tarefas.every((t) => t.aguardando) ? 'Nada para preencher agora.' : 'Tudo preenchido hoje. Obrigado!'}
+        </p>
+        <div className="grade g2">{tarefas.map((t, k) => <CartaoFormulario key={k} t={t} />)}</div>
+        {acoes.length > 0 && (
           <section className="secao painel">
-            <div className="painel-cab"><h2>Problemas e ações em aberto</h2></div>
-            <table><tbody>{abertos.slice(0, 6).map((x, k) => (
-              <tr key={k}><td><span className={`selo ${x.prioridade ? 'vermelho' : 'laranja'}`}>{x.prioridade ? 'Incidente' : 'Ação'}</span></td><td>{x.descricao || x.acao}<br /><span className="suave pequeno">{x.lancamento || 'Geral'}</span></td></tr>
+            <div className="painel-cab"><h2>Ações sob sua responsabilidade</h2></div>
+            <table><tbody>{acoes.slice(0, 5).map((a) => (
+              <tr key={a.id}><td>{a.acao}<br /><span className="suave pequeno">{a.lancamento || 'Geral'}{a.prazo ? ` · prazo ${fmtData(a.prazo)}` : ''}</span></td></tr>
             ))}</tbody></table>
           </section>
         )}
+        {tarefas.some((t) => !t.aguardando) && <p style={{ marginTop: 18 }}><a href="/historico">Ver meus envios anteriores</a></p>}
       </>
     );
   }
 
+  // ---------- Administrador / gerente / diretoria ----------
+  const [ativos, equipe, pend] = await Promise.all([
+    q1(`SELECT COUNT(*)::int n FROM launches WHERE status IN ('captacao','evento','vendas')`),
+    q1(`SELECT COUNT(DISTINCT a.user_id)::int n FROM user_department_assignments a JOIN users x ON x.id=a.user_id AND x.ativo
+          JOIN subdepartments s ON s.id=a.subdepartment_id WHERE s.formulario IS NOT NULL`),
+    pendenciasEquipe(dia),
+  ]);
+  const feitos = pend.filter((p) => p.concluido).length;
+  const passos = [
+    { ok: equipe.n > 0, titulo: 'Cadastrar a equipe', texto: 'Crie o acesso de cada pessoa e marque a atividade dela.', href: '/setor/marketing/equipe', icone: UserPlus },
+    { ok: ativos.n > 0, titulo: 'Abrir um lançamento', texto: 'Com status Captação, Evento ou Vendas. É o que libera os formulários.', href: '/admin/lancamentos/novo', icone: Rocket },
+    { ok: pend.length > 0 && feitos > 0, titulo: 'Equipe preenchendo', texto: 'Os formulários do dia chegam aqui e vão para o dashboard.', href: '/admin/pendencias', icone: ClipboardList },
+  ];
+  const configurado = passos.every((p) => p.ok);
+  const minhas = tarefas.filter((t) => !t.aguardando);
+
   return (
     <>
-      <Topo
-        avatar={iniciais}
-        titulo={`Olá, ${prim}`}
-        descricao={`${u.papel_nome}${funcoes.length ? ` — ${funcoes.join(', ')}` : ''}. Hoje é ${fmtData(dia)}.`}
-      >
-        <a className="btn sec" href="/historico">Meu histórico</a>
-        {veDashboardSetor(u, 'marketing') && <a className="btn" href="/marketing/dashboard">Dashboard do Marketing</a>}
-      </Topo>
+      <Topo avatar={iniciais} titulo={`Olá, ${prim}`} descricao={`Hoje é ${fmtData(dia)}.`} />
 
-      <section className="secao">
-        <h2>{tarefas.length ? (pendentes ? `Você tem ${pendentes} ${pendentes === 1 ? 'formulário pendente' : 'formulários pendentes'} hoje` : 'Tudo preenchido hoje') : 'Formulários de hoje'}</h2>
-        {tarefas.length === 0 ? (
-          <Vazio>
-            {vePainelEmpresa(u)
-              ? 'Seu perfil acompanha os resultados e não tem formulários diários.'
-              : 'Nenhum formulário para hoje. Eles aparecem quando você tem um lançamento ativo atribuído.'}
-          </Vazio>
-        ) : (
-          <div className="grade g3">
-            {tarefas.map((t) => (
-              <div className="painel atividade" key={`${t.form}-${t.lancamento.id}`}>
-                <div className="painel-cab" style={{ marginBottom: 0 }}>
-                  <h3>{t.titulo}</h3>
-                  <StatusTarefa concluido={t.concluido} />
-                </div>
-                <p>{t.lancamento.nome}</p>
-                <div className="rodape">
-                  <a className={`btn ${t.concluido ? 'sec' : ''} peq`} href={`/marketing/${t.form}?lancamento=${t.lancamento.id}`}>
-                    {t.concluido ? 'Revisar envio' : 'Preencher formulário'}
-                  </a>
-                </div>
-              </div>
+      {!configurado && (
+        <section className="painel roteiro">
+          <h2>Para começar</h2>
+          <div className="passos">
+            {passos.map((p, k) => (
+              <a key={k} href={p.href} className={`passo ${p.ok ? 'ok' : ''}`}>
+                <span className="passo-num">{p.ok ? <Check aria-hidden="true" /> : k + 1}</span>
+                <div><b>{p.titulo}</b><span>{p.texto}</span></div>
+              </a>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="secao grade g2">
-        <div className="painel">
-          <div className="painel-cab"><h2>Meus lançamentos ativos</h2></div>
-          {ativos.length === 0 ? (
-            <p className="suave">Nenhum lançamento ativo atribuído a você.</p>
-          ) : (
-            <table>
-              <thead><tr><th>Lançamento</th><th>Fase</th><th>Live</th></tr></thead>
-              <tbody>
-                {ativos.map((l) => (
-                  <tr key={l.id}><td>{l.nome}<br /><span className="suave pequeno">{l.produto || '—'}</span></td><td>{STATUS_LANCAMENTO[l.status]}</td><td>{fmtData(l.data_live)}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="painel">
-          <div className="painel-cab"><h2>Problemas em aberto</h2><a href="/acoes" className="pequeno">Ver todos</a></div>
-          {problemas.incidentes.length + problemas.acoes.length === 0 ? (
-            <p className="suave">Nada em aberto sob sua responsabilidade.</p>
-          ) : (
-            <table>
-              <tbody>
-                {problemas.incidentes.slice(0, 4).map((i) => (
-                  <tr key={`i${i.id}`}>
-                    <td><Semaforo cor={['alta', 'critica'].includes(i.prioridade) ? 'vermelho' : 'amarelo'} texto={`Incidente ${i.prioridade === 'critica' ? 'crítico' : i.prioridade === 'media' ? 'médio' : i.prioridade}`} /></td>
-                    <td>{i.descricao}<br /><span className="suave pequeno">{i.lancamento} · {i.etapa}</span></td>
-                  </tr>
-                ))}
-                {problemas.acoes.slice(0, 4).map((a) => (
-                  <tr key={`a${a.id}`}>
-                    <td><span className="selo laranja">Ação</span></td>
-                    <td>{a.acao}<br /><span className="suave pequeno">{a.lancamento || 'Geral'} · prazo {fmtData(a.prazo)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
+      <div className="grade g4 atalhos">
+        <a className="painel atalho" href="/marketing/dashboard"><BarChart3 aria-hidden="true" /><b>Dashboard</b><span>{feitos} de {pend.length} formulários de hoje</span></a>
+        <a className="painel atalho" href="/admin/lancamentos"><Rocket aria-hidden="true" /><b>Lançamentos</b><span>{ativos.n} {ativos.n === 1 ? 'ativo' : 'ativos'}</span></a>
+        {ehSuperadmin(u) && <a className="painel atalho" href="/admin/usuarios"><UserPlus aria-hidden="true" /><b>Pessoas</b><span>{equipe.n} com formulário</span></a>}
+        {vePainelEmpresa(u) && <a className="painel atalho" href="/admin/tv"><Tv aria-hidden="true" /><b>Painel da TV</b><span>Abrir na televisão</span></a>}
+      </div>
+
+      {minhas.length > 0 && (
+        <section className="secao">
+          <h2>Seus formulários</h2>
+          <div className="grade g2">{minhas.map((t, k) => <CartaoFormulario key={k} t={t} />)}</div>
+        </section>
+      )}
+
+      {pend.length > 0 && (
+        <section className="secao painel">
+          <div className="painel-cab"><h2>Quem já enviou hoje</h2><span className="suave pequeno">{feitos} de {pend.length}</span></div>
+          <div className="tabela-wrap"><table><tbody>
+            {pend.sort((a, b) => a.concluido - b.concluido).map((p) => (
+              <tr key={`${p.usuarioId}-${p.form}-${p.lancamento.id}`}><td><b>{p.usuario}</b><br /><span className="suave pequeno">{p.titulo} · {p.lancamento.nome}</span></td><td><StatusTarefa concluido={p.concluido} /></td></tr>
+            ))}
+          </tbody></table></div>
+        </section>
+      )}
+      {pend.length === 0 && configurado === false && <Vazio>Quando houver lançamento aberto e equipe cadastrada, os envios do dia aparecem aqui.</Vazio>}
     </>
   );
 }

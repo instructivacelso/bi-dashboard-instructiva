@@ -3,7 +3,7 @@
 export function Numero({ nome, rotulo, valor, obrig = true, moeda = false, dica }) {
   return (
     <div className="campo">
-      <label htmlFor={nome}>{rotulo}{!obrig && <span className="suave"> (opcional)</span>}</label>
+      <label htmlFor={nome}>{rotulo}</label>
       <input
         id={nome} name={nome} type="text" inputMode={moeda ? 'decimal' : 'numeric'}
         defaultValue={valor ?? ''} required={obrig} autoComplete="off"
@@ -17,7 +17,7 @@ export function Numero({ nome, rotulo, valor, obrig = true, moeda = false, dica 
 export function Texto({ nome, rotulo, valor, obrig = false, longo = false, max = 300, dica }) {
   return (
     <div className="campo">
-      <label htmlFor={nome}>{rotulo}{!obrig && <span className="suave"> (opcional)</span>}</label>
+      <label htmlFor={nome}>{rotulo}</label>
       {longo
         ? <textarea id={nome} name={nome} defaultValue={valor ?? ''} maxLength={max} />
         : <input id={nome} name={nome} type="text" defaultValue={valor ?? ''} maxLength={max} />}
@@ -61,7 +61,7 @@ export function Selecao({ nome, rotulo, opcoes, valor, obrig = true, vazio = 'Es
 export function DataCampo({ nome, rotulo, valor, obrig = false, dica }) {
   return (
     <div className="campo">
-      <label htmlFor={nome}>{rotulo}{!obrig && <span className="suave"> (opcional)</span>}</label>
+      <label htmlFor={nome}>{rotulo}</label>
       <input id={nome} name={nome} type="date" defaultValue={valor ?? ''} required={obrig} />
       {dica && <small>{dica}</small>}
     </div>

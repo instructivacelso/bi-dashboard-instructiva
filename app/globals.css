@@ -358,3 +358,49 @@ form .bloco-plataforma:has(.gatilho-problema input[value="sim"]:checked) .cond-p
 .ontem div { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; }
 .ontem span { display: block; font-size: 0.75rem; color: var(--suave); font-weight: 600; }
 .ontem b { font-size: 1.1rem; }
+
+/* ---------- Etapas do formulário ---------- */
+.etapa-oculta { display: none !important; }
+form[data-ultima="nao"] .rodape-fixo button[type=submit] { display: none; }
+.etapas { display: flex; flex-direction: column; gap: 6px; }
+.etapas-trilha { display: flex; align-items: center; gap: 0; }
+.etapa-ponto { flex: 1; display: flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }
+.etapa-ponto::after { content: ''; flex: 1; height: 3px; background: var(--linha); margin: 0 6px; border-radius: 3px; }
+.etapa-ponto:last-child { flex: 0; }
+.etapa-ponto:last-child::after { display: none; }
+.etapa-ponto span { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.82rem; background: var(--bg-2); border: 2px solid var(--linha-2); color: var(--suave); flex: none; }
+.etapa-ponto.atual span { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 4px 14px rgba(255,106,26,.35); }
+.etapa-ponto.feita span { background: rgba(255,106,26,.12); border-color: var(--laranja); color: var(--laranja-2); }
+.etapa-ponto.feita::after { background: var(--laranja); }
+.etapas-legenda { font-size: 0.8rem; color: var(--suave); font-weight: 600; }
+.secao-form > h3 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; }
+.secao-form > h3::before { display: none; }
+.secao-form + .secao-form { border-top: 0; padding-top: 6px; }
+.secao-form input[type=text], .secao-form input[type=date], .secao-form input[type=time], .secao-form select, .secao-form textarea { font-size: 17px; padding: 13px 15px; }
+
+/* ---------- Tela inicial ---------- */
+.frase-dia { font-size: 1.05rem; margin: -8px 0 18px; color: var(--rotulo); }
+.cartao-form { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none !important; transition: border-color .2s, transform .2s; }
+.cartao-form:hover { border-color: rgba(255,106,26,.5); transform: translateY(-2px); }
+.cartao-form.aguardando { opacity: .75; }
+.cartao-form.aguardando:hover { transform: none; border-color: var(--linha); }
+.cartao-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.cartao-lanc { font-weight: 700; color: var(--forte); }
+.cartao-rodape { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 10px; }
+.roteiro h2 { margin-bottom: 14px; }
+.passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.passo { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid var(--linha); border-radius: 14px; background: var(--bg-2); color: inherit; text-decoration: none !important; }
+.passo:hover { border-color: var(--laranja); }
+.passo-num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--grad); color: #fff; flex: none; }
+.passo-num svg { width: 16px; height: 16px; }
+.passo.ok .passo-num { background: var(--verde); }
+.passo.ok b { text-decoration: line-through; color: var(--suave); }
+.passo div { display: flex; flex-direction: column; gap: 2px; }
+.passo span:not(.passo-num) { font-size: 0.84rem; color: var(--suave); }
+.atalhos { margin-top: 18px; }
+.atalho { display: flex; flex-direction: column; gap: 4px; color: inherit; text-decoration: none !important; transition: border-color .2s; }
+.atalho:hover { border-color: rgba(255,106,26,.5); }
+.atalho svg { width: 22px; height: 22px; color: var(--laranja-2); margin-bottom: 6px; }
+.atalho span { font-size: 0.84rem; color: var(--suave); }
+@media (prefers-reduced-motion: reduce) { .cartao-form, .cartao-form:hover { transition: none; transform: none; } }
+.rodape-fixo .acoes-linha .btn.sec { order: -1; }
