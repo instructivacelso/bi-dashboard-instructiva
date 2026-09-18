@@ -338,3 +338,23 @@ form:has(.gatilho-falha input[value="falha"]:checked) .cond-falha { display: fle
 form .bloco-plataforma .cond-problema { display: none !important; }
 form .bloco-plataforma:has(.gatilho-problema input[value="sim"]:checked) .cond-problema { display: flex !important; }
 .bloco-cab { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+
+/* Formulário claro */
+.faixa-ver-como { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: rgba(255,106,26,.10); border: 1px solid rgba(255,106,26,.35); border-radius: 14px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.9rem; }
+.secao-form { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
+.secao-form + .secao-form { border-top: 1px solid var(--linha); padding-top: 20px; }
+.secao-form > h3 { font-size: 0.95rem; color: var(--forte); display: flex; align-items: center; gap: 10px; }
+.secao-form > h3::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--grad); }
+.campo small { font-size: 0.8rem; line-height: 1.4; }
+.form-claro { max-width: 680px; }
+.form-claro .linha-campos { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.rodape-fixo { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  background: var(--card); border-top: 1px solid var(--linha); margin: 6px -22px -22px; padding: 14px 22px; border-radius: 0 0 var(--raio) var(--raio); }
+.progresso { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px; font-size: 0.85rem; color: var(--suave); font-weight: 600; }
+.progresso-barra { flex: 1; max-width: 220px; height: 8px; background: var(--linha); border-radius: 8px; overflow: hidden; }
+.progresso-barra i { display: block; height: 100%; background: var(--grad); border-radius: 8px; transition: width .2s; }
+.chip-lanc { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,106,26,.10); color: var(--forte); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 0.88rem; }
+.ontem { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.ontem div { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; }
+.ontem span { display: block; font-size: 0.75rem; color: var(--suave); font-weight: 600; }
+.ontem b { font-size: 1.1rem; }

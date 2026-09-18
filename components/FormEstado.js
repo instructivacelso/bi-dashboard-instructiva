@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
+import Progresso from './Progresso.js';
 
 function Enviar({ texto, textoEnviando }) {
   const { pending } = useFormStatus();
@@ -12,7 +13,7 @@ function Enviar({ texto, textoEnviando }) {
 }
 
 // Formulário com mensagem de erro/sucesso vinda de uma server action
-export default function FormEstado({ action, children, botao = 'Salvar', botaoEnviando, className = 'form', sucesso, protegerSaida = false, extra }) {
+export default function FormEstado({ action, children, botao = 'Salvar', botaoEnviando, className = 'form', sucesso, protegerSaida = false, extra, progresso = false }) {
   const [estado, acao] = useActionState(action, null);
   const ref = useRef(null);
   const sujo = useRef(false);
@@ -38,7 +39,11 @@ export default function FormEstado({ action, children, botao = 'Salvar', botaoEn
     <form action={acao} className={className} ref={ref}>
       {estado?.erro && <div className="aviso erro" role="alert">{estado.erro}</div>}
       {children}
-      <div className="acoes-linha"><Enviar texto={botao} textoEnviando={botaoEnviando} />{extra}</div>
+      {estado?.erro && progresso && <div className="aviso erro" role="alert">{estado.erro}</div>}
+      <div className={progresso ? 'rodape-fixo' : 'acoes-linha'}>
+        {progresso && <Progresso />}
+        <div className="acoes-linha"><Enviar texto={botao} textoEnviando={botaoEnviando} />{extra}</div>
+      </div>
       {estado?.ok && <div className="aviso ok" role="status">{estado.mensagem || sucesso || 'Salvo.'}</div>}
     </form>
   );

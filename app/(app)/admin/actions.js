@@ -291,3 +291,22 @@ export async function alternarMembro(fd) {
   });
   revalidatePath('/setor');
 }
+
+// ---------- Excluir lançamento (e tudo ligado a ele) ----------
+export async function excluirLancamento(fd) {
+  const u = await exigirUsuario();
+  if (!ehSuperadmin(u) && !gerenteDe(u, 'marketing')) return;
+  const id = Number(fd.get('id'));
+  await transacao(async (db) => {
+    const lanc = (await db.query('SELECT * FROM launches WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!lanc) return;
+    const apagados = {};
+    for (const t of ['automation_incidents', 'action_items', 'traffic_daily_entries', 'whatsapp_daily_entries', 'automation_daily_entries',
+      'editor_daily_entries', 'live_results', 'manager_daily_closings', 'commercial_launch_results', 'onboarding_events', 'launch_user_assignments']) {
+      apagados[t] = (await db.query(`DELETE FROM ${t} WHERE launch_id=$1`, [id])).rowCount;
+    }
+    await db.query('DELETE FROM launches WHERE id=$1', [id]);
+    await auditar(db, { userId: u.id, acao: 'excluir', entidade: 'launches', entidadeId: id, antes: lanc, depois: { apagados } });
+  });
+  revalidatePath('/admin/lancamentos');
+}

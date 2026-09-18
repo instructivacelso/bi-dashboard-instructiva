@@ -4,7 +4,7 @@ import { vePainelEmpresa, veDashboardSetor, ehSuperadmin, gerenteDe, lancaComerc
 import Menu from '@/components/Menu.js';
 import { LogOut } from 'lucide-react';
 import BotaoTema from '@/components/BotaoTema.js';
-import { sair } from '@/app/login/actions.js';
+import { sair, sairVerComo } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +82,15 @@ export default async function AppLayout({ children }) {
         <summary><strong>Escola Instructiva</strong><span>Menu</span></summary>
         <Lateral u={u} grupos={grupos} />
       </details>
-      <main className="conteudo">{children}</main>
+      <main className="conteudo">
+        {u.vendoComo && (
+          <div className="faixa-ver-como" role="status">
+            <span>Você está vendo o sistema como <b>{u.nome}</b>. Os envios ficam bloqueados neste modo.</span>
+            <form action={sairVerComo}><button className="btn peq">Voltar para minha conta</button></form>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

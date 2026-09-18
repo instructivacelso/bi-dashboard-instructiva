@@ -4,6 +4,7 @@ import { ehSuperadmin } from '@/lib/perm.js';
 import { fmtDataHora } from '@/lib/datas.js';
 import { Topo, Aviso } from '@/components/Ui.js';
 import FormUsuario from '@/components/FormUsuario.js';
+import { verComo } from '@/app/login/actions.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export default async function Usuarios() {
       </Topo>
       <div className="painel tabela-wrap">
         <table>
-          <thead><tr><th>Nome</th><th>Perfil</th><th>Atividades</th><th>Último acesso</th><th>Situação</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Perfil</th><th>Atividades</th><th>Último acesso</th><th>Situação</th><th /></tr></thead>
           <tbody>{usuarios.map((x) => (
             <tr key={x.id}>
               <td><a href={`/admin/usuarios/${x.id}`}>{x.nome}</a><br /><span className="suave pequeno">{x.email}</span></td>
@@ -36,6 +37,7 @@ export default async function Usuarios() {
               <td className="pequeno">{x.lotacao || '—'}</td>
               <td className="pequeno suave">{x.ultimo_login ? fmtDataHora(x.ultimo_login) : 'nunca'}</td>
               <td>{x.ativo ? <span className="selo verde">Ativo</span> : <span className="selo neutro">Inativo</span>}</td>
+              <td>{x.id !== u.id && x.ativo && <form action={verComo}><input type="hidden" name="user_id" value={x.id} /><button className="btn sec peq">Ver como</button></form>}</td>
             </tr>
           ))}</tbody>
         </table>

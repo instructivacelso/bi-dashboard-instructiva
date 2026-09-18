@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { q1, pool } from '@/lib/db.js';
-import { criarSessao, encerrarSessao } from '@/lib/auth.js';
+import { criarSessao, encerrarSessao, definirVerComo, usuarioAtual } from '@/lib/auth.js';
 import { auditar } from '@/lib/auditoria.js';
 
 export async function entrar(_estado, formData) {
@@ -19,6 +19,7 @@ export async function entrar(_estado, formData) {
 }
 
 export async function sair() {
+  await definirVerComo(null);
   await encerrarSessao();
   redirect('/login');
 }
@@ -34,4 +35,19 @@ export async function redefinirSenha(_estado, formData) {
   await pool.query('UPDATE users SET senha_hash=$1, reset_token=NULL, reset_expira=NULL, updated_at=now() WHERE id=$2', [await bcrypt.hash(senha, 10), u.id]);
   await auditar(pool, { userId: u.id, acao: 'redefinir_senha', entidade: 'users', entidadeId: u.id });
   return { ok: true };
+}
+
+// Entrar e sair do modo "ver como"
+export async function verComo(fd) {
+  const u = await usuarioAtual();
+  const alvo = Number(fd.get('user_id'));
+  if (!u || u.vendoComo || u.papel !== 'superadmin' || !alvo) return;
+  await definirVerComo(alvo);
+  await auditar(pool, { userId: u.id, acao: 'ver_como', entidade: 'users', entidadeId: alvo });
+  redirect('/');
+}
+
+export async function sairVerComo() {
+  await definirVerComo(null);
+  redirect('/admin/usuarios');
 }

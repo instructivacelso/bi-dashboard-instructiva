@@ -7,7 +7,7 @@ import { hoje } from '@/lib/datas.js';
 import { lerNumero } from '@/lib/formato.js';
 import { FORMULARIOS, formularioAplicavel, lancamentoAberto, GARGALOS } from '@/lib/formularios.js';
 import { LEITORES, ErroValidacao } from '@/lib/leitores.js';
-import { formulariosDo, podeEditar, ehSuperadmin } from '@/lib/perm.js';
+import { formulariosDo, podeEditar, ehSuperadmin, gerenteDe } from '@/lib/perm.js';
 import { lancamentosDoUsuario, plataformasDo } from '@/lib/dados.js';
 
 const falha = (m) => { throw new ErroValidacao(m); };
@@ -44,13 +44,15 @@ async function inserir(db, tabela, base, dados) {
 export async function salvarFormulario(_estado, fd) {
   try {
     const u = await exigirUsuario();
+    if (u.vendoComo) falha(`Você está vendo como ${u.nome}. Volte para sua conta para enviar.`);
     const form = String(fd.get('form') || '');
     const cfg = FORMULARIOS[form];
     if (!cfg) falha('Formulário desconhecido.');
     const dia = hoje();
     const registroId = lerNumero(fd.get('registro_id'));
+    const teste = fd.get('teste') === '1';
     const launchId = lerNumero(fd.get('launch_id'));
-    if (!launchId) falha('Escolha o lançamento.');
+    if (!launchId && !teste) falha('Escolha o lançamento.');
 
     // 1. Validação: nada vazio, condicionais obrigatórios quando aparecem
     let linhas;
@@ -59,6 +61,12 @@ export async function salvarFormulario(_estado, fd) {
     else if (form === 'automacao') { const r = LEITORES.automacao(fd); linhas = [r.dados]; incidente = r.incidente; }
     else if (form === 'gerente') linhas = [LEITORES.gerente(fd, { userId: u.id, hoje: dia })];
     else linhas = [LEITORES[form](fd)];
+
+    // Modo teste (sem lançamento cadastrado): valida e não grava
+    if (teste) {
+      if (!ehSuperadmin(u) && !gerenteDe(u, 'marketing')) falha('Modo teste disponível só para administrador e gerente.');
+      return { ok: true, mensagem: 'Tudo preenchido corretamente. Isto foi um teste e nada foi gravado: cadastre um lançamento para a equipe começar a enviar.' };
+    }
 
     // 2. Gravação
     const salvos = await transacao(async (db) => {

@@ -15,15 +15,17 @@ import InputMoeda from '@/components/InputMoeda.js';
 import { Numero, Texto, Escolha, Selecao, DataCampo, SIM_NAO, sn } from '@/components/Campos.js';
 import { Topo, Aviso, Vazio, Kpi, Semaforo } from '@/components/Ui.js';
 import { salvarFormulario } from '../actions.js';
+import SeletorLancamento from '@/components/SeletorLancamento.js';
 
 export const dynamic = 'force-dynamic';
 const opcoesDe = (obj) => Object.entries(obj).map(([valor, rotulo]) => ({ valor, rotulo }));
 
-function Moeda({ nome, rotulo, valor }) {
+function Moeda({ nome, rotulo, valor, dica }) {
   return (
     <div className="campo">
       <label htmlFor={nome}>{rotulo}</label>
       <InputMoeda id={nome} name={nome} valorInicial={valor} />
+      {dica && <small>{dica}</small>}
     </div>
   );
 }
@@ -79,15 +81,17 @@ export default async function PaginaFormulario(props) {
     opcoes = (await lancamentosDoUsuario(u)).filter((l) => formularioAplicavel(form, l, dia));
     const podeGerir = ehSuperadmin(u) || gerenteDe(u, 'marketing');
     if (!opcoes.length && podeGerir) {
-      const pls = ['Meta Ads'];
       return (
         <>
           <Topo titulo={titulo} descricao={descricao}><a className="btn" href="/admin/lancamentos/novo">Cadastrar lançamento</a></Topo>
-          <Aviso tipo="info">Este é o formulário que a equipe vai preencher. Para liberar o envio, cadastre um lançamento com status Captação, Evento ou Vendas e atribua as pessoas a ele{form === 'live' ? ' (o da live abre só no dia da live ou quando liberado no lançamento)' : ''}.</Aviso>
-          <div className="painel" style={{ marginTop: 16, maxWidth: 760 }}>
-            <fieldset disabled style={{ border: 0, padding: 0, margin: 0 }} className="form">
-              <Campos form={form} v={{}} registros={[]} plataformas={pls} responsaveis={[]} />
-            </fieldset>
+          <Aviso tipo="info">Modo teste: você pode preencher para ver como fica. Nada é gravado até existir um lançamento em Captação, Evento ou Vendas.</Aviso>
+          <div className="painel form-claro" style={{ marginTop: 16 }}>
+            <FormEstado action={salvarFormulario} botao="Testar envio" botaoEnviando="Conferindo…" progresso>
+              <input type="hidden" name="form" value={form} />
+              <input type="hidden" name="teste" value="1" />
+              <SeletorLancamento opcoes={[]} form={form} desabilitado />
+              <Campos form={form} v={{}} registros={[]} plataformas={['Meta Ads']} responsaveis={await responsaveisMarketing()} />
+            </FormEstado>
           </div>
         </>
       );
@@ -123,21 +127,14 @@ export default async function PaginaFormulario(props) {
         <a className="btn sec" href={`/historico?form=${form}`}>Ver histórico</a>
       </Topo>
 
-      {opcoes.length > 1 && (
-        <nav className="acoes-linha" aria-label="Escolher lançamento" style={{ marginBottom: 16 }}>
-          {opcoes.map((l) => (
-            <a key={l.id} href={`/marketing/${form}?lancamento=${l.id}`} className={`btn peq ${l.id === lanc.id ? '' : 'sec'}`} aria-current={l.id === lanc.id ? 'true' : undefined}>{l.nome}</a>
-          ))}
-        </nav>
-      )}
 
       {form === 'trafego' && <ComparativoTrafego lanc={lanc} dia={v.data_ref || dia} />}
 
-      <div className="grade g2" style={{ alignItems: 'start', marginTop: form === 'trafego' ? 16 : 0 }}>
-        <div className="painel">
+      <div className={gestor ? 'grade g2' : ''} style={{ alignItems: 'start', marginTop: form === 'trafego' ? 16 : 0 }}>
+        <div className="painel form-claro">
           <div className="painel-cab">
-            <h2>{lanc.nome}</h2>
-            <span className="suave pequeno">Referência: {fmtData(v.data_ref || dia)}</span>
+            <h2>Fechamento de {fmtData(v.data_ref || dia)}</h2>
+            <span className="chip-lanc">{lanc.nome}</span>
           </div>
           {correcao && <Aviso tipo="info">Você está corrigindo um registro{autor ? ` de ${autor.nome}` : ''}. A alteração fica registrada na auditoria.</Aviso>}
           {!correcao && registros.length > 0 && <Aviso tipo="ok">Você já enviou hoje. Pode ajustar até o fim do dia.</Aviso>}
@@ -149,11 +146,13 @@ export default async function PaginaFormulario(props) {
               botao={registros.length ? 'Salvar alterações' : 'Enviar fechamento'}
               botaoEnviando="Enviando…"
               protegerSaida
+              progresso
               extra={form === 'gerente' && !correcao ? <button type="submit" name="rapido" value="sim" formNoValidate className="btn sec">Operação dentro do esperado</button> : null}
             >
               <input type="hidden" name="form" value={form} />
-              <input type="hidden" name="launch_id" value={lanc.id} />
-              {correcao && <input type="hidden" name="registro_id" value={v.id} />}
+              {correcao
+                ? <><input type="hidden" name="launch_id" value={lanc.id} /><input type="hidden" name="registro_id" value={v.id} /></>
+                : <SeletorLancamento opcoes={opcoes} atual={lanc.id} form={form} />}
               <p className="contador">Todos os campos são obrigatórios. Se não houve movimento, informe 0.</p>
               <Campos form={form} v={v} registros={registros} plataformas={plataformas} responsaveis={responsaveis} />
               {correcao && <Texto nome="motivo" rotulo="Motivo da correção" obrig longo dica="Obrigatório. Explique o que estava errado." />}
@@ -166,6 +165,8 @@ export default async function PaginaFormulario(props) {
   );
 }
 
+const Sec = ({ titulo, children }) => <div className="secao-form"><h3>{titulo}</h3>{children}</div>;
+
 function Campos({ form, v, registros, plataformas, responsaveis }) {
   switch (form) {
     case 'trafego':
@@ -173,148 +174,171 @@ function Campos({ form, v, registros, plataformas, responsaveis }) {
         const r = registros.find((x) => x.plataforma === pl) || {};
         const p = (c) => `p${i}_${c}`;
         return (
-          <section key={pl} className="bloco-plataforma" aria-label={pl}>
+          <div key={pl} className={plataformas.length > 1 ? 'bloco-plataforma' : ''}>
             <input type="hidden" name="plataforma" value={pl} />
-            <h3>{pl}</h3>
-            <div className="linha-campos">
-              <Moeda nome={p('orcamento_dia')} rotulo="Orçamento previsto para o dia" valor={r.orcamento_dia} />
-              <Moeda nome={p('valor_gasto')} rotulo="Valor gasto no dia" valor={r.valor_gasto} />
-            </div>
-            <div className="linha-campos">
-              <Numero nome={p('impressoes')} rotulo="Impressões" valor={r.impressoes} />
-              <Numero nome={p('cliques')} rotulo="Cliques no link" valor={r.cliques} />
-              <Numero nome={p('visitas')} rotulo="Visitas reais na página" valor={r.visitas} />
-            </div>
-            <div className="linha-campos">
-              <Numero nome={p('cadastros')} rotulo="Cadastros concluídos" valor={r.cadastros} />
-              <Decimal nome={p('tempo_carregamento')} rotulo="Tempo médio de carregamento (s)" valor={r.tempo_carregamento} />
-            </div>
-            <div className={`gatilho-problema-${i}`}>
-              <Escolha nome={p('houve_problema')} rotulo="Houve algum problema?" opcoes={SIM_NAO} valor={sn(r.houve_problema)} classe="gatilho-problema" />
-            </div>
-            <div className="condicional cond-problema">
-              <Texto nome={p('problema_descricao')} rotulo="Descrição curta do problema" valor={r.problema_descricao} />
-              <Texto nome={p('problema_acao')} rotulo="Ação que está sendo realizada" valor={r.problema_acao} />
-            </div>
-          </section>
+            <Sec titulo={`Investimento · ${pl}`}>
+              <div className="linha-campos">
+                <Moeda nome={p('orcamento_dia')} rotulo="Orçamento previsto para hoje" valor={r.orcamento_dia} dica="Quanto estava planejado gastar hoje nesta plataforma." />
+                <Moeda nome={p('valor_gasto')} rotulo="Valor gasto hoje" valor={r.valor_gasto} dica="Valor que aparece no gerenciador de anúncios." />
+              </div>
+            </Sec>
+            <Sec titulo="Resultado dos anúncios">
+              <div className="linha-campos">
+                <Numero nome={p('impressoes')} rotulo="Impressões" valor={r.impressoes} dica="Quantas vezes os anúncios apareceram." />
+                <Numero nome={p('cliques')} rotulo="Cliques no link" valor={r.cliques} dica="Cliques que levaram para a página." />
+              </div>
+            </Sec>
+            <Sec titulo="Página de captação">
+              <div className="linha-campos">
+                <Numero nome={p('visitas')} rotulo="Visitas na página" valor={r.visitas} dica="Pessoas que realmente carregaram a página." />
+                <Numero nome={p('cadastros')} rotulo="Cadastros concluídos" valor={r.cadastros} dica="Quem terminou o cadastro hoje." />
+              </div>
+              <Decimal nome={p('tempo_carregamento')} rotulo="Tempo médio para a página abrir (segundos)" valor={r.tempo_carregamento} dica="Exemplo: 2,5" />
+            </Sec>
+            <Sec titulo="Problemas">
+              <Escolha nome={p('houve_problema')} rotulo="Aconteceu algum problema hoje?" opcoes={SIM_NAO} valor={sn(r.houve_problema)} classe="gatilho-problema" />
+              <div className="condicional cond-problema">
+                <Texto nome={p('problema_descricao')} rotulo="O que aconteceu?" valor={r.problema_descricao} />
+                <Texto nome={p('problema_acao')} rotulo="O que está sendo feito?" valor={r.problema_acao} />
+              </div>
+            </Sec>
+          </div>
         );
       });
     case 'whatsapp':
       return (
         <>
-          <div className="linha-campos">
-            <Numero nome="grupos_ativos" rotulo="Grupos ativos do lançamento" valor={v.grupos_ativos} />
-            <Numero nome="total_grupos" rotulo="Total atual de pessoas nos grupos" valor={v.total_grupos} />
-          </div>
-          <div className="linha-campos">
-            <Numero nome="convites_api" rotulo="Convites enviados via API" valor={v.convites_api} />
-            <Numero nome="convites_entregues" rotulo="Convites entregues via API" valor={v.convites_entregues} />
-          </div>
-          <div className="linha-campos">
-            <Numero nome="entradas_api" rotulo="Entraram por API" valor={v.entradas_api} />
-            <Numero nome="entradas_pagina" rotulo="Entraram pelo link da página" valor={v.entradas_pagina} />
-            <Numero nome="entradas_organico" rotulo="Entraram pelo orgânico" valor={v.entradas_organico} />
-          </div>
-          <div className="linha-campos">
-            <Numero nome="saidas" rotulo="Saíram dos grupos" valor={v.saidas} />
-            <Moeda nome="custo_disparos" rotulo="Valor gasto com disparos" valor={v.custo_disparos} />
-          </div>
+          <Sec titulo="Grupos agora">
+            <div className="linha-campos">
+              <Numero nome="grupos_ativos" rotulo="Grupos ativos" valor={v.grupos_ativos} dica="Quantos grupos deste lançamento estão abertos." />
+              <Numero nome="total_grupos" rotulo="Total de pessoas nos grupos" valor={v.total_grupos} dica="Soma de todos os grupos neste momento." />
+            </div>
+          </Sec>
+          <Sec titulo="Convites pela API">
+            <div className="linha-campos">
+              <Numero nome="convites_api" rotulo="Convites enviados" valor={v.convites_api} />
+              <Numero nome="convites_entregues" rotulo="Convites entregues" valor={v.convites_entregues} dica="Não pode ser maior que os enviados." />
+            </div>
+            <Moeda nome="custo_disparos" rotulo="Valor gasto com disparos hoje" valor={v.custo_disparos} />
+          </Sec>
+          <Sec titulo="Quem entrou e saiu hoje">
+            <div className="linha-campos">
+              <Numero nome="entradas_api" rotulo="Entraram pela API" valor={v.entradas_api} />
+              <Numero nome="entradas_pagina" rotulo="Entraram pela página" valor={v.entradas_pagina} dica="Pelo link da página de captação." />
+            </div>
+            <div className="linha-campos">
+              <Numero nome="entradas_organico" rotulo="Entraram pelo orgânico" valor={v.entradas_organico} />
+              <Numero nome="saidas" rotulo="Saíram dos grupos" valor={v.saidas} />
+            </div>
+          </Sec>
           <div className="campo gatilho-problema">
             <div className="escolha"><label><input type="checkbox" name="houve_problema" value="sim" defaultChecked={v.houve_problema} /> Registrar problema</label></div>
           </div>
           <div className="condicional cond-problema">
-            <Texto nome="problema_descricao" rotulo="Descrição curta do problema" valor={v.problema_descricao} />
-            <Texto nome="problema_acao" rotulo="Ação realizada ou necessária" valor={v.problema_acao} />
+            <Texto nome="problema_descricao" rotulo="O que aconteceu?" valor={v.problema_descricao} />
+            <Texto nome="problema_acao" rotulo="O que foi feito ou precisa ser feito?" valor={v.problema_acao} />
           </div>
         </>
       );
     case 'automacao':
       return (
         <>
-          <div>
-            {ETAPAS_MONITORADAS.map((e) => (
-              <div className="status-linha" key={e.campo}>
-                <span className="rot" style={{ fontWeight: 600, fontSize: '0.9rem' }} id={`r-${e.campo}`}>{e.rotulo}</span>
-                <div className="escolha gatilho-falha" role="radiogroup" aria-labelledby={`r-${e.campo}`}>
-                  <label><input type="radio" name={e.campo} value="ok" defaultChecked={v[e.campo] === true} required /> Funcionando</label>
-                  <label><input type="radio" name={e.campo} value="falha" defaultChecked={v[e.campo] === false} /> Com falha</label>
+          <Sec titulo="Como está cada etapa hoje?">
+            <div>
+              {ETAPAS_MONITORADAS.map((e) => (
+                <div className="status-linha" key={e.campo}>
+                  <span className="rot" style={{ fontWeight: 600, fontSize: '0.9rem' }} id={`r-${e.campo}`}>{e.rotulo.replace('Status d', 'D').replace(/^Da /, 'A ').replace(/^Do /, 'O ').replace(/^Das /, 'As ')}</span>
+                  <div className="escolha gatilho-falha" role="radiogroup" aria-labelledby={`r-${e.campo}`}>
+                    <label><input type="radio" name={e.campo} value="ok" defaultChecked={v[e.campo] === true} required /> Funcionando</label>
+                    <label><input type="radio" name={e.campo} value="falha" defaultChecked={v[e.campo] === false} /> Com falha</label>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Sec>
           <div className="condicional cond-falha">
-            <p className="pequeno"><strong>Registrar incidente.</strong> Ele fica aberto para o gerente até ser resolvido.</p>
-            <Selecao nome="etapa" rotulo="Etapa afetada" obrig={false} opcoes={opcoesDe(ETAPAS_AUTOMACAO_ROTULOS)} />
-            <Numero nome="afetados" rotulo="Pessoas ou alunos afetados (estimativa)" obrig={false} />
-            <Texto nome="incidente_descricao" rotulo="Descrição curta" longo />
+            <p className="pequeno"><strong>Algo falhou: registre o incidente.</strong> Ele fica aberto para o gerente até ser resolvido.</p>
+            <Selecao nome="etapa" rotulo="Qual etapa falhou?" obrig={false} opcoes={opcoesDe(ETAPAS_AUTOMACAO_ROTULOS)} />
+            <Numero nome="afetados" rotulo="Quantas pessoas foram afetadas (estimativa)" obrig={false} />
+            <Texto nome="incidente_descricao" rotulo="O que aconteceu?" longo />
             <Escolha nome="prioridade" rotulo="Prioridade" opcoes={PRIORIDADES} obrig={false} />
             <DataCampo nome="previsao_solucao" rotulo="Previsão de solução" />
           </div>
-          <details className="bloco pequeno">
-            <summary>Fluxo sob responsabilidade da Automação</summary>
-            <p className="suave">Compra aprovada → página de obrigado → boas-vindas → conta liberada → grupo de alunos → regras → orientação de acesso → entrega ao Suporte. A responsabilidade passa ao Suporte só depois que o aluno recebeu o acesso, entrou no grupo e recebeu as orientações iniciais.</p>
-          </details>
         </>
       );
     case 'editor':
       return (
         <>
-          <Escolha nome="tipo_entrega" rotulo="Tipo de entrega" opcoes={TIPOS_ENTREGA} valor={v.tipo_entrega} />
-          <div className="linha-campos">
-            <Texto nome="titulo" rotulo="Nome ou título da entrega" valor={v.titulo} obrig max={200} />
-            <Texto nome="solicitante" rotulo="Solicitante da entrega" valor={v.solicitante} obrig max={120} />
-          </div>
-          <Escolha nome="prioridade" rotulo="Prioridade" opcoes={PRIORIDADE_EDITOR} valor={v.prioridade} />
-          <div className="linha-campos">
-            <Numero nome="quantidade_planejada" rotulo="Quantidade planejada" valor={v.quantidade_planejada} />
-            <Numero nome="quantidade" rotulo="Quantidade concluída no dia" valor={v.quantidade} />
-            <DataCampo nome="prazo" rotulo="Prazo previsto de entrega" valor={v.prazo} obrig />
-          </div>
-          <Escolha nome="situacao" rotulo="Status" opcoes={SITUACAO_EDITOR} valor={v.situacao} classe="gatilho-atraso" />
-          <Texto nome="entrega" rotulo="Link da entrega ou da pasta do projeto" valor={v.entrega} obrig max={500} />
-          <div className="condicional cond-atraso">
-            <Texto nome="motivo_atraso" rotulo="Motivo do atraso" valor={v.motivo_atraso} />
-          </div>
+          <Sec titulo="O que é a entrega">
+            <Escolha nome="tipo_entrega" rotulo="Tipo" opcoes={TIPOS_ENTREGA} valor={v.tipo_entrega} />
+            <div className="linha-campos">
+              <Texto nome="titulo" rotulo="Nome da entrega" valor={v.titulo} obrig max={200} dica="Ex.: Criativo 03 — oferta do curso" />
+              <Texto nome="solicitante" rotulo="Quem pediu" valor={v.solicitante} obrig max={120} />
+            </div>
+            <Escolha nome="prioridade" rotulo="Prioridade" opcoes={PRIORIDADE_EDITOR} valor={v.prioridade} />
+          </Sec>
+          <Sec titulo="Andamento">
+            <div className="linha-campos">
+              <Numero nome="quantidade_planejada" rotulo="Quantidade planejada" valor={v.quantidade_planejada} />
+              <Numero nome="quantidade" rotulo="Concluídas hoje" valor={v.quantidade} />
+            </div>
+            <DataCampo nome="prazo" rotulo="Prazo de entrega" valor={v.prazo} obrig />
+            <Escolha nome="situacao" rotulo="Status" opcoes={SITUACAO_EDITOR} valor={v.situacao} classe="gatilho-atraso" />
+            <div className="condicional cond-atraso">
+              <Texto nome="motivo_atraso" rotulo="Por que atrasou?" valor={v.motivo_atraso} />
+            </div>
+            <Texto nome="entrega" rotulo="Link da entrega ou da pasta" valor={v.entrega} obrig max={500} dica="Cole o link do Drive, Frame.io ou pasta do projeto." />
+          </Sec>
         </>
       );
     case 'live':
       return (
         <>
-          <Escolha nome="plataforma" rotulo="Plataforma da live" opcoes={PLATAFORMAS_LIVE} valor={v.plataforma} />
-          <div className="linha-campos">
-            <Hora nome="horario_previsto" rotulo="Horário previsto de início" valor={v.horario_previsto} />
-            <Hora nome="horario_real" rotulo="Horário real de início" valor={v.horario_real} />
-          </div>
-          <div className="linha-campos">
-            <Numero nome="participantes_unicos" rotulo="Pessoas únicas que participaram" valor={v.participantes_unicos} />
-            <Numero nome="pessoas_pitch" rotulo="Pessoas presentes no pitch" valor={v.pessoas_pitch} />
-            <Numero nome="cliques_oferta" rotulo="Cliques no link da oferta" valor={v.cliques_oferta} />
-          </div>
-          <div className="linha-campos">
-            <Numero nome="lista_reserva" rotulo="Entraram na lista de reserva" valor={v.lista_reserva} />
+          <Sec titulo="A live">
+            <Escolha nome="plataforma" rotulo="Onde foi a live" opcoes={PLATAFORMAS_LIVE} valor={v.plataforma} />
+            <div className="linha-campos">
+              <Hora nome="horario_previsto" rotulo="Horário previsto" valor={v.horario_previsto} />
+              <Hora nome="horario_real" rotulo="Horário que começou" valor={v.horario_real} />
+            </div>
+          </Sec>
+          <Sec titulo="Público">
+            <div className="linha-campos">
+              <Numero nome="participantes_unicos" rotulo="Pessoas únicas na live" valor={v.participantes_unicos} />
+              <Numero nome="pessoas_pitch" rotulo="Pessoas no momento da oferta" valor={v.pessoas_pitch} />
+            </div>
+          </Sec>
+          <Sec titulo="Resultado">
+            <div className="linha-campos">
+              <Numero nome="cliques_oferta" rotulo="Cliques no link da oferta" valor={v.cliques_oferta} />
+              <Numero nome="lista_reserva" rotulo="Entraram na lista de reserva" valor={v.lista_reserva} />
+            </div>
             <Numero nome="checkouts_iniciados" rotulo="Checkouts iniciados" valor={v.checkouts_iniciados} />
-          </div>
-          <Escolha nome="problema_tecnico" rotulo="Houve problema técnico?" opcoes={SIM_NAO} valor={sn(v.problema_tecnico)} classe="gatilho-problema" />
-          <div className="condicional cond-problema">
-            <Texto nome="observacao" rotulo="O que aconteceu?" valor={v.observacao} />
-          </div>
+            <Escolha nome="problema_tecnico" rotulo="Teve problema técnico?" opcoes={SIM_NAO} valor={sn(v.problema_tecnico)} classe="gatilho-problema" />
+            <div className="condicional cond-problema">
+              <Texto nome="observacao" rotulo="O que aconteceu?" valor={v.observacao} />
+            </div>
+          </Sec>
         </>
       );
     case 'gerente':
       return (
         <>
-          <Escolha nome="situacao" rotulo="Situação do dia" opcoes={SEMAFORO_OPCOES} valor={v.situacao} />
-          <Escolha nome="sit_trafego" rotulo="Situação do tráfego" opcoes={SEMAFORO_OPCOES} valor={v.sit_trafego} />
-          <Escolha nome="sit_pagina" rotulo="Situação da página e captação" opcoes={SEMAFORO_OPCOES} valor={v.sit_pagina} />
-          <Escolha nome="sit_grupos" rotulo="Situação dos grupos e WhatsApp" opcoes={SEMAFORO_OPCOES} valor={v.sit_grupos} />
-          <Escolha nome="sit_automacao" rotulo="Situação das automações e onboarding" opcoes={SEMAFORO_OPCOES} valor={v.sit_automacao} />
-          <Selecao nome="gargalo" rotulo="Principal gargalo" valor={v.gargalo && GARGALOS[v.gargalo] ? v.gargalo : ''} opcoes={opcoesDe(GARGALOS)} />
-          <Texto nome="acao" rotulo="Ação que será tomada" valor={v.acao} obrig />
-          <div className="linha-campos">
-            <Selecao nome="responsavel_id" rotulo="Responsável pela ação" valor={v.responsavel_id} opcoes={responsaveis.map((r) => ({ valor: r.id, rotulo: r.nome }))} />
-            <DataCampo nome="prazo" rotulo="Prazo da ação" valor={v.prazo} obrig />
-          </div>
-          <p className="suave pequeno">Tudo verde? Use “Operação dentro do esperado” para confirmar sem preencher o resto.</p>
+          <Sec titulo="Como está o lançamento hoje">
+            <Escolha nome="situacao" rotulo="Situação geral" opcoes={SEMAFORO_OPCOES} valor={v.situacao} />
+            <Escolha nome="sit_trafego" rotulo="Tráfego" opcoes={SEMAFORO_OPCOES} valor={v.sit_trafego} />
+            <Escolha nome="sit_pagina" rotulo="Página e captação" opcoes={SEMAFORO_OPCOES} valor={v.sit_pagina} />
+            <Escolha nome="sit_grupos" rotulo="Grupos e WhatsApp" opcoes={SEMAFORO_OPCOES} valor={v.sit_grupos} />
+            <Escolha nome="sit_automacao" rotulo="Automações e onboarding" opcoes={SEMAFORO_OPCOES} valor={v.sit_automacao} />
+          </Sec>
+          <Sec titulo="Ação corretiva">
+            <Selecao nome="gargalo" rotulo="Principal gargalo" valor={v.gargalo && GARGALOS[v.gargalo] ? v.gargalo : ''} opcoes={opcoesDe(GARGALOS)} />
+            <Texto nome="acao" rotulo="O que será feito" valor={v.acao} obrig />
+            <div className="linha-campos">
+              <Selecao nome="responsavel_id" rotulo="Responsável" valor={v.responsavel_id} opcoes={responsaveis.map((r) => ({ valor: r.id, rotulo: r.nome }))} />
+              <DataCampo nome="prazo" rotulo="Prazo" valor={v.prazo} obrig />
+            </div>
+            <p className="suave pequeno">Está tudo verde? Clique em “Operação dentro do esperado” e pronto.</p>
+          </Sec>
         </>
       );
     default:
@@ -360,18 +384,23 @@ async function ComparativoTrafego({ lanc, dia }) {
       </div>
     );
   };
+  const tot = metr(antes.find((r) => r.plataforma === null));
   return (
-    <section className="painel">
-      <div className="painel-cab"><h2>Comparativo com o dia anterior</h2><span className="suave pequeno">{ant.d ? 'Somente leitura' : 'Sem registro anterior'}</span></div>
-      {!ant.d && agora.length === 0 ? <p className="suave">Sem registro anterior. Os números aparecem aqui a partir do segundo dia.</p> : (
+    <section className="painel form-claro" style={{ maxWidth: 'none' }}>
+      <div className="painel-cab" style={{ marginBottom: 10 }}><h2>Como foi o dia anterior{ant.d ? ` (${fmtData(ant.d).slice(0, 5)})` : ''}</h2></div>
+      {!tot ? <p className="suave">Sem registro anterior.</p> : (
         <>
-          {tabela(null)}
-          {grupos.filter(Boolean).length > 1 && (
-            <details className="bloco" style={{ marginTop: 10 }}>
-              <summary>Ver por plataforma</summary>
-              <div className="grade g2" style={{ marginTop: 10 }}>{grupos.filter(Boolean).map((pl) => tabela(pl))}</div>
-            </details>
-          )}
+          <div className="ontem">
+            <div><span>Gasto</span><b>{moeda(tot.gasto, 0)}</b></div>
+            <div><span>Cliques</span><b>{numero(tot.cli)}</b></div>
+            <div><span>Visitas</span><b>{numero(tot.vis)}</b></div>
+            <div><span>Cadastros</span><b>{numero(tot.cad)}</b></div>
+            <div><span>CPL</span><b>{moeda(tot.cpl)}</b></div>
+          </div>
+          <details className="bloco pequeno" style={{ marginTop: 10 }}>
+            <summary>Ver comparativo completo com hoje</summary>
+            <div className="grade g2" style={{ marginTop: 10 }}>{tabela(null)}{grupos.filter(Boolean).length > 1 && grupos.filter(Boolean).map((pl) => tabela(pl))}</div>
+          </details>
         </>
       )}
     </section>

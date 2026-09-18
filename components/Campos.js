@@ -26,7 +26,7 @@ export function Texto({ nome, rotulo, valor, obrig = false, longo = false, max =
   );
 }
 
-export function Escolha({ nome, rotulo, opcoes, valor, classe = '', obrig = true }) {
+export function Escolha({ nome, rotulo, opcoes, valor, classe = '', obrig = true, dica }) {
   return (
     <fieldset className={`campo ${classe}`} style={{ border: 0, padding: 0, margin: 0 }}>
       <legend className="rot" style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6 }}>{rotulo}</legend>
@@ -37,6 +37,7 @@ export function Escolha({ nome, rotulo, opcoes, valor, classe = '', obrig = true
           </label>
         ))}
       </div>
+      {dica && <small className="suave">{dica}</small>}
     </fieldset>
   );
 }
@@ -44,7 +45,7 @@ export function Escolha({ nome, rotulo, opcoes, valor, classe = '', obrig = true
 export const SIM_NAO = { sim: 'Sim', nao: 'Não' };
 export const sn = (b) => (b === true ? 'sim' : b === false ? 'nao' : undefined);
 
-export function Selecao({ nome, rotulo, opcoes, valor, obrig = true, vazio = 'Escolha…' }) {
+export function Selecao({ nome, rotulo, opcoes, valor, obrig = true, vazio = 'Escolha…', dica }) {
   return (
     <div className="campo">
       <label htmlFor={nome}>{rotulo}</label>
@@ -52,15 +53,17 @@ export function Selecao({ nome, rotulo, opcoes, valor, obrig = true, vazio = 'Es
         <option value="">{vazio}</option>
         {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.rotulo}</option>)}
       </select>
+      {dica && <small>{dica}</small>}
     </div>
   );
 }
 
-export function DataCampo({ nome, rotulo, valor, obrig = false }) {
+export function DataCampo({ nome, rotulo, valor, obrig = false, dica }) {
   return (
     <div className="campo">
       <label htmlFor={nome}>{rotulo}{!obrig && <span className="suave"> (opcional)</span>}</label>
       <input id={nome} name={nome} type="date" defaultValue={valor ?? ''} required={obrig} />
+      {dica && <small>{dica}</small>}
     </div>
   );
 }
