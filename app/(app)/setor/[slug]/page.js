@@ -6,7 +6,8 @@ import { tarefasDoDia, pendenciasEquipe } from '@/lib/dados.js';
 import { hoje } from '@/lib/datas.js';
 import { Topo, Vazio, Aviso } from '@/components/Ui.js';
 
-export default async function Setor({ params }) {
+export default async function Setor(props) {
+  const params = await props.params;
   const u = await exigirUsuario();
   const setor = await q1('SELECT * FROM departments WHERE slug=$1 AND ativo', [params.slug]);
   if (!setor) notFound();

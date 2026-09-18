@@ -19,7 +19,7 @@ export async function entrar(_estado, formData) {
 }
 
 export async function sair() {
-  encerrarSessao();
+  await encerrarSessao();
   redirect('/login');
 }
 

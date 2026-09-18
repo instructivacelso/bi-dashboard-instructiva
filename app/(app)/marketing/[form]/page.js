@@ -16,7 +16,9 @@ import { salvarFormulario } from '../actions.js';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PaginaFormulario({ params, searchParams }) {
+export default async function PaginaFormulario(props) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const form = params.form;
   const cfg = FORMULARIOS[form];
   if (!cfg) notFound();

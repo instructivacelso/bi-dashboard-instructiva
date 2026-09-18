@@ -1,5 +1,6 @@
 'use client';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 
 function Enviar({ texto, textoEnviando }) {
   const { pending } = useFormStatus();
@@ -12,7 +13,7 @@ function Enviar({ texto, textoEnviando }) {
 
 // Formulário com mensagem de erro/sucesso vinda de uma server action
 export default function FormEstado({ action, children, botao = 'Salvar', botaoEnviando, className = 'form', sucesso }) {
-  const [estado, acao] = useFormState(action, null);
+  const [estado, acao] = useActionState(action, null);
   return (
     <form action={acao} className={className}>
       {estado?.erro && <div className="aviso erro" role="alert">{estado.erro}</div>}

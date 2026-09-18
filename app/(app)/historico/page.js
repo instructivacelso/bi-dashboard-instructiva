@@ -7,7 +7,8 @@ import { Topo, Vazio } from '@/components/Ui.js';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Historico({ searchParams }) {
+export default async function Historico(props) {
+  const searchParams = await props.searchParams;
   const u = await exigirUsuario();
   const dia = hoje();
   const equipe = vePainelEmpresa(u) || gerenteDe(u, 'marketing');

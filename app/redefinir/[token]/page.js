@@ -1,7 +1,8 @@
 import FormEstado from '@/components/FormEstado.js';
 import { redefinirSenha } from '@/app/login/actions.js';
 
-export default function Redefinir({ params }) {
+export default async function Redefinir(props) {
+  const params = await props.params;
   return (
     <main className="login-form" style={{ minHeight: '100vh' }}>
       <FormEstado action={redefinirSenha} botao="Salvar nova senha" sucesso="Senha alterada. Você já pode entrar.">

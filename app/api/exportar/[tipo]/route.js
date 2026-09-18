@@ -27,7 +27,8 @@ const ok = (nome, conteudo) => new Response(conteudo, {
 const negado = () => new Response('Acesso negado', { status: 403 });
 const dataOk = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null);
 
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const u = await usuarioAtual();
   if (!u) return new Response('Faça login', { status: 401 });
   const sp = new URL(req.url).searchParams;

@@ -17,7 +17,8 @@ const C = ({ n, r, t = 'text', v, req, dica }) => (
   </div>
 );
 
-export default async function EditarLancamento({ params }) {
+export default async function EditarLancamento(props) {
+  const params = await props.params;
   const u = await exigirUsuario();
   if (!ehSuperadmin(u) && !gerenteDe(u, 'marketing')) return <Aviso tipo="erro">Área restrita.</Aviso>;
   const novo = params.id === 'novo';

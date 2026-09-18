@@ -13,7 +13,8 @@ export const dynamic = 'force-dynamic';
 
 const PERIODOS = [7, 15, 30, 60, 90];
 
-export default async function DashboardMarketing({ searchParams }) {
+export default async function DashboardMarketing(props) {
+  const searchParams = await props.searchParams;
   const u = await exigirUsuario();
   if (!veDashboardSetor(u, 'marketing')) {
     return <><Topo titulo="Dashboard do Marketing" /><Aviso tipo="erro">Este dashboard é restrito à gerência de Marketing e à Diretoria.</Aviso></>;

@@ -9,7 +9,8 @@ import { gerarLinkSenha } from '../../actions.js';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditarUsuario({ params }) {
+export default async function EditarUsuario(props) {
+  const params = await props.params;
   const u = await exigirUsuario();
   if (!ehSuperadmin(u)) return <Aviso tipo="erro">Área restrita ao superadministrador.</Aviso>;
   const usuario = await q1('SELECT id, nome, email, cargo, role_id, ativo FROM users WHERE id=$1', [Number(params.id)]);

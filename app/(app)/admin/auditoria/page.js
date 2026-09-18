@@ -13,7 +13,8 @@ function diferencas(antes, depois) {
     .map((k) => `${k}: ${antes[k] ?? '—'} → ${depois[k] ?? '—'}`).join(' · ');
 }
 
-export default async function Auditoria({ searchParams }) {
+export default async function Auditoria(props) {
+  const searchParams = await props.searchParams;
   const u = await exigirUsuario();
   if (!vePainelEmpresa(u)) return <Aviso tipo="erro">Área restrita à Diretoria e ao superadministrador.</Aviso>;
   const ent = searchParams.entidade || null;
