@@ -5,7 +5,7 @@ import { hoje, fmtData, somarDias } from '@/lib/datas.js';
 import { moeda, numero, pct } from '@/lib/formato.js';
 import {
   FORMULARIOS, formularioAplicavel, lancamentosDoFormulario, lancamentoAberto, DESCRICOES, ETAPAS_AUTOMACAO_ROTULOS, ETAPAS_MONITORADAS, PRIORIDADES,
-  TIPOS_ENTREGA, SITUACAO_EDITOR, PRIORIDADE_EDITOR, PLATAFORMAS_LIVE, SEMAFORO_OPCOES, GARGALOS, rotuloEtapa,
+  TIPOS_ENTREGA, SITUACAO_EDITOR, PRIORIDADE_EDITOR, PLATAFORMAS_LIVE, SEMAFORO_OPCOES, GARGALOS, rotuloEtapa, STATUS_LANCAMENTO,
 } from '@/lib/formularios.js';
 import { formulariosDo, podeEditar, ehSuperadmin, gerenteDe } from '@/lib/perm.js';
 import { lancamentosDoUsuario, dashboardMarketing, responsaveisMarketing, plataformasDo } from '@/lib/dados.js';
@@ -82,10 +82,31 @@ export default async function PaginaFormulario(props) {
     opcoes = lancamentosDoFormulario(form, await lancamentosDoUsuario(u), dia);
     const podeGerir = ehSuperadmin(u) || gerenteDe(u, 'marketing');
     if (!opcoes.length && podeGerir) {
+      // Explica por que cada lançamento existente não aparece aqui (fase ou data da live)
+      const existentes = form === 'live'
+        ? (await lancamentosDoUsuario(u)).filter((l) => !l.permanente && !['encerrado', 'cancelado'].includes(l.status))
+        : [];
+      const motivo = (l) => {
+        if (!['captacao', 'evento', 'vendas'].includes(l.status)) return `está em ${STATUS_LANCAMENTO[l.status] || l.status}. Mude para Captação, Evento ou Vendas`;
+        return `a live está marcada para ${l.data_live ? fmtData(l.data_live) : 'uma data não informada'}. Para enviar hoje, marque “Liberar o formulário da live fora da data da live”`;
+      };
       return (
         <>
           <Topo titulo={titulo} descricao={descricao}><a className="btn" href="/admin/lancamentos/novo">Cadastrar lançamento</a></Topo>
-          <Aviso tipo="info">Modo teste: você pode preencher para ver como fica. Nada é gravado até existir um lançamento em Captação, Evento ou Vendas.</Aviso>
+          {existentes.length > 0 ? (
+            <Aviso tipo="info">
+              O formulário da live só abre no dia da live (ou quando liberado) e com o lançamento em Captação, Evento ou Vendas.
+              {existentes.map((l) => (
+                <span key={l.id} style={{ display: 'block', marginTop: 6 }}>
+                  <b>{l.nome}</b>: {motivo(l)}. <a href={`/admin/lancamentos/${l.id}`}>Abrir lançamento</a>
+                </span>
+              ))}
+            </Aviso>
+          ) : (
+            <Aviso tipo="info">{form === 'live'
+              ? 'Modo teste: você pode preencher para ver como fica. Nada é gravado até existir um lançamento em Captação, Evento ou Vendas com a live de hoje (ou liberada).'
+              : 'Modo teste: você pode preencher para ver como fica. Nada é gravado até existir um lançamento em Captação, Evento ou Vendas.'}</Aviso>
+          )}
           <div className="painel form-claro" style={{ marginTop: 16 }}>
             <FormEstado action={salvarFormulario} botao="Testar envio" botaoEnviando="Conferindo…" progresso>
               <input type="hidden" name="form" value={form} />

@@ -11,9 +11,9 @@ export default function SeletorLancamento({ opcoes, atual, form, desabilitado })
         id="launch_id" name="launch_id" required={!desabilitado} disabled={desabilitado} defaultValue={atual ?? ''}
         onChange={(e) => e.target.value && router.push(`/marketing/${form}?lancamento=${e.target.value}`)}
       >
-        {desabilitado ? <option value="">Nenhum lançamento ativo cadastrado</option> : opcoes.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}
+        {desabilitado ? <option value="">Nenhum lançamento disponível hoje</option> : opcoes.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}
       </select>
-      <small>{desabilitado ? 'Cadastre um lançamento para a equipe poder enviar.' : 'Escolha o lançamento a que estes números se referem.'}</small>
+      <small>{desabilitado ? 'Veja acima o que falta liberar, ou cadastre um lançamento.' : 'Escolha o lançamento a que estes números se referem.'}</small>
     </div>
   );
 }
